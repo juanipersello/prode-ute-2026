@@ -6,7 +6,7 @@
 <title>PRODE UTE – Mundial 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --rojo:#C8102E;--azul:#003DA5;--dorado:#D4A017;--dorado-claro:#F5CE6A;--verde:#009A44;--blanco:#FAFAF8;--gris-oscuro:#1A1A2E;--gris-medio:#2D2D4A;--radio:8px; }
+  :root{--rojo:#C8102E;--azul:#003DA5;--dorado:#D4A017;--dorado-claro:#F5CE6A;--verde:#009A44;--blanco:#FAFAF8;--gris-oscuro:#1A1A2E;--gris-medio:#2D2D4A;--radio:8px}
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Barlow',sans-serif;background:var(--gris-oscuro);color:var(--blanco);min-height:100vh}
   .header{background:linear-gradient(135deg,var(--rojo) 0%,#8B0000 40%,var(--azul) 100%);position:relative;overflow:hidden}
@@ -210,9 +210,11 @@
               <div class="form-field"><label>Fase</label>
                 <select id="match-phase">
                   <option value="Grupos">Fase de Grupos</option>
+                  <option value="Dieciseisavos">Dieciseisavos de Final</option>
                   <option value="Octavos">Octavos de Final</option>
                   <option value="Cuartos">Cuartos de Final</option>
                   <option value="Semifinal">Semifinal</option>
+                  <option value="Tercero">Tercer y Cuarto Puesto</option>
                   <option value="Final">Final</option>
                 </select>
               </div>
@@ -247,8 +249,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const ADMIN_PASS = 'ProdeUTE2026';
-const PHASES = ['Grupos','Octavos','Cuartos','Semifinal','Final'];
-const PHASE_LABELS = {Grupos:'Fase de Grupos',Octavos:'Octavos de Final',Cuartos:'Cuartos de Final',Semifinal:'Semifinal',Final:'Final'};
+
+// ── FASES CORRECTAS MUNDIAL 2026 ──
+const PHASES = ['Grupos','Dieciseisavos','Octavos','Cuartos','Semifinal','Tercero','Final'];
+const PHASE_LABELS = {
+  Grupos:        'Fase de Grupos',
+  Dieciseisavos: 'Dieciseisavos de Final',
+  Octavos:       'Octavos de Final',
+  Cuartos:       'Cuartos de Final',
+  Semifinal:     'Semifinal',
+  Tercero:       'Tercer y Cuarto Puesto',
+  Final:         'Final'
+};
 
 let matches=[], predictions={}, results={};
 let currentUser=null, userSaved=false, activePredictPhase=null, adminLogged=false;
@@ -261,21 +273,26 @@ function toast(msg,err=false){
   clearTimeout(t._t); t._t=setTimeout(()=>{t.className='toast'},3000);
 }
 
-// ── INIT ──
+// ── LISTENERS TIEMPO REAL ──
 onSnapshot(collection(db,'matches'),snap=>{
   matches=[];
   snap.forEach(d=>matches.push({id:d.id,...d.data()}));
-  matches.sort((a,b)=>{const p=PHASES.indexOf(a.phase)-PHASES.indexOf(b.phase);return p!==0?p:(a.createdAt||0)-(b.createdAt||0)});
+  matches.sort((a,b)=>{
+    const p=PHASES.indexOf(a.phase)-PHASES.indexOf(b.phase);
+    return p!==0?p:(a.createdAt||0)-(b.createdAt||0);
+  });
   if(currentUser)renderPredictMatches();
   if(adminLogged)renderAdminMatches();
   renderScores(); renderView();
 });
+
 onSnapshot(collection(db,'predictions'),snap=>{
   predictions={};
   snap.forEach(d=>{predictions[d.id]=d.data()});
   renderScores(); renderView();
   if(adminLogged)renderAdminUsers();
 });
+
 onSnapshot(collection(db,'results'),snap=>{
   results={};
   snap.forEach(d=>{results[d.id]=d.data()});
@@ -311,7 +328,7 @@ window.loadUserPredictions=function(){
     document.getElementById('save-btn').style.display='none';
     return;
   }
-  const phases=[...new Set(matches.map(m=>m.phase))];
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   if(!activePredictPhase||!phases.includes(activePredictPhase))activePredictPhase=phases[0];
   renderPhaseTabs(phases,'predict'); renderPredictMatches();
 };
@@ -324,7 +341,7 @@ function renderPhaseTabs(phases,ctx){
 
 window.switchPhase=function(ph,ctx){
   activePredictPhase=ph;
-  const phases=[...new Set(matches.map(m=>m.phase))];
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   renderPhaseTabs(phases,ctx);
   if(ctx==='predict')renderPredictMatches();
 };
@@ -426,7 +443,7 @@ function renderUserBody(name){
   if(matches.length===0)return'<p style="color:rgba(255,255,255,.3);font-size:14px">Sin partidos aún.</p>';
   const up=predictions[name]||{};
   let html='';
-  const phases=[...new Set(matches.map(m=>m.phase))];
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   phases.forEach(ph=>{
     html+=`<div class="phase-header">${PHASE_LABELS[ph]||ph}</div>`;
     matches.filter(m=>m.phase===ph).forEach(m=>{
@@ -508,7 +525,7 @@ window.deleteMatch=async function(id){
 window.saveResult=async function(id){
   const h=document.getElementById('res-'+id+'-h')?.value.trim();
   const a=document.getElementById('res-'+id+'-a')?.value.trim();
-  if(h===''||!h||a===''||!a){toast('Ingresá ambos goles',true);return;}
+  if(!h||!a){toast('Ingresá ambos goles',true);return;}
   try{await setDoc(doc(db,'results',id),{h:parseInt(h),a:parseInt(a)});toast('✔ Resultado guardado');}
   catch(e){toast('Error al guardar resultado',true);}
 };
@@ -539,7 +556,7 @@ function renderAdminMatches(){
   if(!c)return;
   if(matches.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">No hay partidos cargados.</div>';return;}
   let html='';
-  const phases=[...new Set(matches.map(m=>m.phase))];
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   phases.forEach(ph=>{
     html+=`<div class="phase-header">${PHASE_LABELS[ph]||ph}</div>`;
     matches.filter(m=>m.phase===ph).forEach(m=>{
@@ -550,14 +567,15 @@ function renderAdminMatches(){
           <div class="admin-match-meta">${esc(m.date||'')}</div>
         </div>
         <div class="admin-match-actions">
-          ${res?`<span class="result-badge-ok">${res.h} - ${res.a}</span>
-            <button class="btn btn-secondary" style="font-size:12px;padding:8px 12px" onclick="clearResult('${m.id}')">✏ Editar</button>`
-          :`<div class="result-inline">
-              <input type="number" min="0" max="99" id="res-${m.id}-h" placeholder="0">
-              <span style="color:rgba(255,255,255,.4);font-weight:800">-</span>
-              <input type="number" min="0" max="99" id="res-${m.id}-a" placeholder="0">
-              <button class="btn btn-success" style="font-size:12px;padding:8px 12px" onclick="saveResult('${m.id}')">Guardar</button>
-            </div>`}
+          ${res
+            ?`<span class="result-badge-ok">${res.h} - ${res.a}</span>
+              <button class="btn btn-secondary" style="font-size:12px;padding:8px 12px" onclick="clearResult('${m.id}')">✏ Editar</button>`
+            :`<div class="result-inline">
+                <input type="number" min="0" max="99" id="res-${m.id}-h" placeholder="0">
+                <span style="color:rgba(255,255,255,.4);font-weight:800">-</span>
+                <input type="number" min="0" max="99" id="res-${m.id}-a" placeholder="0">
+                <button class="btn btn-success" style="font-size:12px;padding:8px 12px" onclick="saveResult('${m.id}')">Guardar</button>
+              </div>`}
           <button class="btn btn-danger" style="font-size:12px;padding:8px 12px" onclick="deleteMatch('${m.id}')">🗑</button>
         </div>
       </div>`;
