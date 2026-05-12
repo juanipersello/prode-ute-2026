@@ -25,7 +25,6 @@
   .content{padding:28px 24px;max-width:1100px;margin:0 auto}
   .page{display:none}.page.active{display:block}
   .section-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(212,160,23,.3)}
-
   .name-input-section{background:var(--gris-medio);border-radius:var(--radio);padding:24px;margin-bottom:28px;border:1px solid rgba(255,255,255,.1)}
   .name-input-section label{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:10px}
   .name-input-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -33,7 +32,6 @@
   .name-input-row input:focus{border-color:var(--dorado)}
   .name-input-row input::placeholder{color:rgba(255,255,255,.3)}
   .user-status{margin-top:12px;font-size:14px;color:rgba(255,255,255,.6)}
-  .user-status.saved{color:var(--verde)}
 
   .btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;border:none;border-radius:6px;padding:12px 24px;cursor:pointer;transition:all .2s}
   .btn-primary{background:var(--dorado);color:var(--gris-oscuro)}.btn-primary:hover{background:var(--dorado-claro)}
@@ -45,44 +43,67 @@
   .btn-sm{padding:8px 14px;font-size:12px}
 
   /* FASE BLOCK */
-  .phase-block{margin-bottom:32px;border-radius:var(--radio);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+  .phase-block{margin-bottom:28px;border-radius:var(--radio);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+  .phase-block.locked-phase{border-color:rgba(200,16,46,.2)}
+  .phase-block.pending-phase{border-color:rgba(255,255,255,.05);opacity:.7}
   .phase-block-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(255,255,255,.04);flex-wrap:wrap;gap:10px}
   .phase-block-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);display:flex;align-items:center;gap:10px}
   .phase-status-badge{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px}
   .badge-open{background:rgba(0,154,68,.2);color:#4dcd7f;border:1px solid rgba(0,154,68,.3)}
   .badge-locked{background:rgba(200,16,46,.15);color:#f07080;border:1px solid rgba(200,16,46,.3)}
-  .badge-pending{background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1)}
+  .badge-pending{background:rgba(255,255,255,.05);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.1)}
+  .badge-saved{background:rgba(212,160,23,.15);color:var(--dorado);border:1px solid rgba(212,160,23,.3)}
   .phase-block-body{padding:16px 20px 20px}
+  .phase-locked-msg{text-align:center;padding:28px;color:rgba(255,255,255,.3);font-size:14px}
   .phase-save-bar{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap}
   .phase-save-info{font-size:13px;color:rgba(255,255,255,.4)}
 
+  /* DATE GROUP HEADER */
+  .date-group-header{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);padding:10px 0 6px;margin-top:6px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
+  .group-sub-header{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(212,160,23,.6);padding:8px 0 4px;margin-top:4px}
+
   /* PARTIDOS */
-  .matches-grid{display:grid;gap:10px}
-  .match-card{background:var(--gris-medio);border-radius:var(--radio);padding:14px 18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.08)}
-  .match-team{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px}
+  .matches-grid{display:grid;gap:8px}
+  .match-card{background:var(--gris-medio);border-radius:var(--radio);padding:13px 16px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);transition:border-color .2s}
+  .match-card:hover{border-color:rgba(212,160,23,.2)}
+  .match-team{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.5px}
   .match-team.home{text-align:right}.match-team.away{text-align:left}
-  .score-inputs{display:flex;align-items:center;gap:6px}
-  .score-input{width:44px;height:44px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;outline:none}
+  .score-inputs{display:flex;align-items:center;gap:5px}
+  .score-input{width:42px;height:42px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;outline:none}
   .score-input:focus{border-color:var(--dorado);background:rgba(212,160,23,.1)}
-  .score-input:disabled{opacity:.5;cursor:not-allowed}
-  .score-sep{font-size:20px;font-weight:800;color:rgba(255,255,255,.4)}
-  .match-date{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:-4px;margin-bottom:4px;letter-spacing:1px}
+  .score-input:disabled{opacity:.45;cursor:not-allowed;background:rgba(255,255,255,.04)}
+  .score-sep{font-size:18px;font-weight:800;color:rgba(255,255,255,.35)}
 
   /* ELIMINATORIA */
-  .elim-card{background:var(--gris-medio);border-radius:var(--radio);padding:18px 20px;border:1px solid rgba(255,255,255,.08);border-left:3px solid var(--dorado)}
-  .elim-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:14px}
-  .elim-row{display:grid;grid-template-columns:1fr 50px 1fr;gap:10px;align-items:center;margin-bottom:10px}
-  .elim-team-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 12px;color:white;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;outline:none;text-align:center;width:100%}
+  .elim-card{background:var(--gris-medio);border-radius:var(--radio);padding:16px 18px;border:1px solid rgba(255,255,255,.08);border-left:3px solid var(--dorado)}
+  .elim-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:12px}
+  .elim-row{display:grid;grid-template-columns:1fr 44px 1fr;gap:8px;align-items:center;margin-bottom:8px}
+  .elim-team-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:9px 10px;color:white;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;outline:none;text-align:center;width:100%}
   .elim-team-input:focus{border-color:var(--dorado)}
-  .elim-team-input:disabled{opacity:.5;cursor:not-allowed}
-  .elim-team-input::placeholder{color:rgba(255,255,255,.25);font-weight:400;font-size:13px}
+  .elim-team-input:disabled{opacity:.45;cursor:not-allowed}
+  .elim-team-input::placeholder{color:rgba(255,255,255,.2);font-weight:400;font-size:12px}
   .elim-score-row{display:flex;align-items:center;justify-content:center;gap:8px}
-  .elim-score-input{width:44px;height:40px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;outline:none}
+  .elim-score-input{width:42px;height:38px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;outline:none}
   .elim-score-input:focus{border-color:var(--dorado);background:rgba(212,160,23,.1)}
-  .elim-score-input:disabled{opacity:.5;cursor:not-allowed}
-  .elim-vs{font-size:12px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:2px;text-align:center}
-  .elim-real-result{margin-top:10px;padding:8px 12px;background:rgba(0,154,68,.1);border:1px solid rgba(0,154,68,.3);border-radius:6px;font-size:13px;color:#4dcd7f;font-family:'Barlow Condensed',sans-serif;font-weight:700}
-  .info-box{background:rgba(0,61,165,.15);border:1px solid rgba(0,61,165,.35);border-radius:6px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.6}
+  .elim-score-input:disabled{opacity:.45;cursor:not-allowed}
+  .elim-vs{font-size:11px;color:rgba(255,255,255,.25);font-weight:700;letter-spacing:2px;text-align:center}
+  .elim-real-result{margin-top:8px;padding:7px 10px;background:rgba(0,154,68,.1);border:1px solid rgba(0,154,68,.25);border-radius:6px;font-size:12px;color:#4dcd7f;font-family:'Barlow Condensed',sans-serif;font-weight:700}
+  .info-box{background:rgba(0,61,165,.12);border:1px solid rgba(0,61,165,.3);border-radius:6px;padding:10px 14px;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px;line-height:1.6}
+
+  /* AUTOCOMPLETE */
+  .autocomplete-wrap{position:relative;width:100%}
+  .autocomplete-input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none}
+  .autocomplete-input:focus{border-color:var(--dorado)}
+  .autocomplete-input::placeholder{color:rgba(255,255,255,.3)}
+  .autocomplete-dropdown{position:absolute;top:100%;left:0;right:0;background:#1e2040;border:1px solid rgba(212,160,23,.4);border-top:none;border-radius:0 0 6px 6px;z-index:100;max-height:180px;overflow-y:auto;display:none}
+  .autocomplete-dropdown.open{display:block}
+  .autocomplete-item{padding:9px 14px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;transition:background .15s}
+  .autocomplete-item:hover,.autocomplete-item.selected{background:rgba(212,160,23,.15)}
+  .autocomplete-item .flag{font-size:18px}
+
+  /* DATE PICKER */
+  input[type=date]{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none;width:100%;color-scheme:dark}
+  input[type=date]:focus{border-color:var(--dorado)}
 
   /* TABLA */
   .scores-table-wrap{overflow-x:auto}
@@ -94,65 +115,65 @@
   .rank-1{background:var(--dorado);color:var(--gris-oscuro)}.rank-2{background:#A8A9AD;color:var(--gris-oscuro)}.rank-3{background:#CD7F32;color:white}.rank-other{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
   .pts-badge{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:var(--dorado)}
 
-  /* VER PRONÓSTICOS */
-  .predictions-viewer{display:grid;gap:16px}
+  /* VER */
+  .predictions-viewer{display:grid;gap:14px}
   .prediction-card{background:var(--gris-medio);border-radius:var(--radio);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
-  .prediction-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;gap:12px}
+  .prediction-header{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;gap:12px}
   .prediction-header:hover{background:rgba(255,255,255,.03)}
   .prediction-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:1px}
   .prediction-pts{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:var(--dorado);white-space:nowrap}
-  .prediction-body{padding:0 18px 16px;display:none}.prediction-body.open{display:block}
-  .pred-phase-header{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dorado);padding:12px 0 6px;border-bottom:1px solid rgba(212,160,23,.2);margin-bottom:6px}
-  .pred-match-row{display:grid;grid-template-columns:1fr 90px 1fr;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px;gap:8px}
+  .prediction-body{padding:0 18px 14px;display:none}.prediction-body.open{display:block}
+  .pred-phase-header{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dorado);padding:11px 0 5px;border-bottom:1px solid rgba(212,160,23,.2);margin-bottom:5px}
+  .pred-match-row{display:grid;grid-template-columns:1fr 86px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;gap:8px}
   .pred-match-row:last-child{border-bottom:none}
   .pred-team-home{text-align:right;font-weight:500}.pred-team-away{text-align:left;font-weight:500}
   .pred-score{text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px}
-  .pred-score.exact{color:var(--verde)}.pred-score.winner{color:var(--dorado)}.pred-score.wrong{color:rgba(255,255,255,.35)}.pred-score.pending{color:rgba(255,255,255,.35)}
-  .pred-elim-row{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
-  .pred-elim-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:3px}
-  .pred-elim-content{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px}
+  .pred-score.exact{color:var(--verde)}.pred-score.winner{color:var(--dorado)}.pred-score.wrong{color:rgba(255,255,255,.3)}.pred-score.pending{color:rgba(255,255,255,.3)}
+  .pred-elim-row{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+  .pred-elim-label{font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:2px;font-weight:600}
+  .pred-elim-content{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px}
 
   /* ADMIN */
   .admin-login{max-width:380px;margin:60px auto;background:var(--gris-medio);border-radius:var(--radio);padding:36px;border:1px solid rgba(255,255,255,.1);text-align:center}
   .admin-login h2{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;letter-spacing:2px;margin-bottom:6px;color:var(--dorado)}
   .admin-login p{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:24px}
-  .form-field{margin-bottom:16px;text-align:left}
-  .form-field label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px;font-weight:600}
-  .form-field input,.form-field select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:12px 14px;color:white;font-size:15px;outline:none;font-family:'Barlow',sans-serif;width:100%}
+  .form-field{margin-bottom:14px;text-align:left}
+  .form-field label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:5px;font-weight:600}
+  .form-field input,.form-field select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-size:14px;outline:none;font-family:'Barlow',sans-serif;width:100%}
   .form-field input:focus,.form-field select:focus{border-color:var(--dorado)}
   .form-field input::placeholder{color:rgba(255,255,255,.3)}
   .form-field select option{background:var(--gris-oscuro)}
   .error-msg{color:var(--rojo);font-size:13px;margin-top:8px;min-height:18px}
-  .admin-panel{max-width:860px}
-  .admin-section{background:var(--gris-medio);border-radius:var(--radio);padding:24px;margin-bottom:24px;border:1px solid rgba(255,255,255,.08)}
-  .admin-section h3{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:20px}
-  .add-match-form{display:grid;gap:12px}
-  .match-form-row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end}
+  .admin-panel{max-width:900px}
+  .admin-section{background:var(--gris-medio);border-radius:var(--radio);padding:22px;margin-bottom:22px;border:1px solid rgba(255,255,255,.08)}
+  .admin-section h3{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:18px}
+  .add-match-form{display:grid;gap:10px}
+  .match-form-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
   .match-form-row .form-field{margin:0}
-  .match-form-vs{font-family:'Barlow Condensed',sans-serif;font-weight:800;color:rgba(255,255,255,.3);font-size:18px;text-align:center;padding-bottom:12px}
-  .match-form-extra{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .type-toggle{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+  .match-form-vs{font-family:'Barlow Condensed',sans-serif;font-weight:800;color:rgba(255,255,255,.3);font-size:16px;text-align:center;padding-bottom:11px}
+  .match-form-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .match-form-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .type-toggle{display:flex;gap:8px;flex-wrap:wrap}
   .type-btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);cursor:pointer;transition:all .2s}
   .type-btn.active{background:var(--dorado);color:var(--gris-oscuro);border-color:var(--dorado)}
-  .admin-match-list,.admin-users-list{display:grid;gap:8px}
-  .admin-match-item{background:rgba(255,255,255,.04);border-radius:6px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;align-items:start;gap:16px;border:1px solid rgba(255,255,255,.06)}
-  .admin-match-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;margin-bottom:2px}
-  .admin-match-meta{font-size:12px;color:rgba(255,255,255,.4)}
-  .admin-match-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .result-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .result-inline input[type=number]{width:42px;height:36px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:white;outline:none;padding:0}
-  .result-inline input[type=text]{height:36px;min-width:100px;font-family:'Barlow',sans-serif;font-size:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:white;outline:none;padding:0 8px}
+  .admin-match-item{background:rgba(255,255,255,.04);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;align-items:start;gap:12px;border:1px solid rgba(255,255,255,.06)}
+  .admin-match-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;margin-bottom:2px}
+  .admin-match-meta{font-size:11px;color:rgba(255,255,255,.35)}
+  .admin-match-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .result-inline{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .result-inline input[type=number]{width:40px;height:34px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:white;outline:none;padding:0}
+  .result-inline input[type=text]{height:34px;min-width:88px;font-family:'Barlow',sans-serif;font-size:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:white;outline:none;padding:0 7px}
   .result-inline input:focus{border-color:var(--verde)}
-  .result-badge-ok{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;padding:4px 10px;border-radius:4px;background:rgba(0,154,68,.2);color:#4dcd7f;white-space:nowrap}
-  .admin-user-item{background:rgba(255,255,255,.04);border-radius:6px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,.06);gap:12px;flex-wrap:wrap}
-  .admin-user-name{font-weight:600;font-size:15px}
-  .admin-user-meta{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
-  .phase-admin-block{background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(255,255,255,.06);margin-bottom:12px;overflow:hidden}
-  .phase-admin-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;flex-wrap:wrap;gap:8px}
-  .phase-admin-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
-  .phase-admin-matches{padding:0 16px 12px;display:grid;gap:6px}
-  .badge-elim{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(0,61,165,.3);color:#7aabf5}
-  .badge-grupos{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(0,154,68,.2);color:#4dcd7f}
+  .result-badge-ok{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:3px 9px;border-radius:4px;background:rgba(0,154,68,.2);color:#4dcd7f;white-space:nowrap}
+  .admin-user-item{background:rgba(255,255,255,.04);border-radius:6px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,.06);gap:10px;flex-wrap:wrap}
+  .admin-user-name{font-weight:600;font-size:14px}
+  .admin-user-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+  .phase-admin-block{background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;overflow:hidden}
+  .phase-admin-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;flex-wrap:wrap;gap:8px}
+  .phase-admin-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .phase-admin-matches{padding:0 14px 10px;display:grid;gap:5px}
+  .badge-elim{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:rgba(0,61,165,.3);color:#7aabf5}
+  .badge-grupos{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:rgba(0,154,68,.2);color:#4dcd7f}
   .logout-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;padding:6px 14px;border-radius:4px;cursor:pointer;float:right}
   .logout-btn:hover{border-color:var(--rojo);color:var(--rojo)}
   .toast{position:fixed;bottom:24px;right:24px;background:var(--verde);color:white;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;padding:14px 22px;border-radius:8px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px}
@@ -171,6 +192,7 @@
     .elim-vs{display:none}
     .match-form-row{grid-template-columns:1fr}
     .match-form-vs{display:none}
+    .match-form-3,.match-form-2{grid-template-columns:1fr}
     .admin-match-item{grid-template-columns:1fr}
   }
 </style>
@@ -201,34 +223,29 @@
 </nav>
 
 <div class="content">
-
-  <!-- PREDICCIONES -->
   <div class="page active" id="page-predict">
     <div class="section-title">Mis Predicciones</div>
     <div class="name-input-section">
       <label>Tu nombre de participante</label>
       <div class="name-input-row">
         <input type="text" id="user-name-input" placeholder="Ej: Juan García" maxlength="30">
-        <button class="btn btn-primary" onclick="loadUserPredictions()">Cargar mis picks</button>
+        <button class="btn btn-primary" onclick="loadUserPredictions()">Entrar</button>
       </div>
       <div class="user-status" id="user-status"></div>
     </div>
     <div id="predict-content"></div>
   </div>
 
-  <!-- TABLA -->
   <div class="page" id="page-scores">
     <div class="section-title">Tabla de Puntajes</div>
     <div id="scores-content"></div>
   </div>
 
-  <!-- VER PRONÓSTICOS -->
   <div class="page" id="page-view">
     <div class="section-title">Pronósticos del Grupo</div>
     <div class="predictions-viewer" id="view-content"></div>
   </div>
 
-  <!-- ADMIN -->
   <div class="page" id="page-admin">
     <div id="admin-login-section">
       <div class="admin-login">
@@ -244,32 +261,63 @@
     </div>
     <div id="admin-panel-section" style="display:none">
       <button class="logout-btn" onclick="adminLogout()">Cerrar sesión</button>
-      <div class="section-title" style="margin-bottom:24px">⚙️ Panel de Administración</div>
+      <div class="section-title" style="margin-bottom:22px">⚙️ Panel de Administración</div>
       <div class="admin-panel">
         <div class="admin-section">
           <h3>➕ Agregar Partido</h3>
           <div class="add-match-form">
-            <div class="form-field" style="margin-bottom:4px">
+            <div class="form-field" style="margin-bottom:2px">
               <label>Tipo</label>
               <div class="type-toggle">
                 <button class="type-btn active" id="tipo-grupos" onclick="setTipo('grupos')">⚽ Fase de Grupos</button>
                 <button class="type-btn" id="tipo-elim" onclick="setTipo('elim')">🏆 Eliminatoria</button>
               </div>
             </div>
+            <!-- GRUPOS -->
             <div id="form-grupos">
-              <div class="match-form-row" style="margin-bottom:12px">
-                <div class="form-field"><label>Equipo Local</label><input type="text" id="match-home" placeholder="Ej: Argentina" maxlength="30"></div>
+              <div class="match-form-row" style="margin-bottom:10px">
+                <div class="form-field" style="margin:0">
+                  <label>Equipo Local</label>
+                  <div class="autocomplete-wrap" id="wrap-home">
+                    <input class="autocomplete-input" id="match-home" placeholder="Buscar país..." autocomplete="off" oninput="acInput(this,'drop-home')" onblur="acBlur('drop-home')" onfocus="acInput(this,'drop-home')">
+                    <div class="autocomplete-dropdown" id="drop-home"></div>
+                  </div>
+                </div>
                 <div class="match-form-vs">VS</div>
-                <div class="form-field"><label>Equipo Visitante</label><input type="text" id="match-away" placeholder="Ej: Brasil" maxlength="30"></div>
+                <div class="form-field" style="margin:0">
+                  <label>Equipo Visitante</label>
+                  <div class="autocomplete-wrap" id="wrap-away">
+                    <input class="autocomplete-input" id="match-away" placeholder="Buscar país..." autocomplete="off" oninput="acInput(this,'drop-away')" onblur="acBlur('drop-away')" onfocus="acInput(this,'drop-away')">
+                    <div class="autocomplete-dropdown" id="drop-away"></div>
+                  </div>
+                </div>
               </div>
-              <div class="match-form-extra">
-                <div class="form-field"><label>Grupo</label><input type="text" id="match-group" placeholder="Ej: Grupo A"></div>
-                <div class="form-field"><label>Fecha (opcional)</label><input type="text" id="match-date" placeholder="Ej: 15 Jun"></div>
+              <div class="match-form-3">
+                <div class="form-field" style="margin:0">
+                  <label>Grupo</label>
+                  <select id="match-group">
+                    <option value="">Sin grupo</option>
+                    <option>Grupo A</option><option>Grupo B</option><option>Grupo C</option>
+                    <option>Grupo D</option><option>Grupo E</option><option>Grupo F</option>
+                    <option>Grupo G</option><option>Grupo H</option><option>Grupo I</option>
+                    <option>Grupo J</option><option>Grupo K</option><option>Grupo L</option>
+                  </select>
+                </div>
+                <div class="form-field" style="margin:0">
+                  <label>Fecha del partido</label>
+                  <input type="date" id="match-date">
+                </div>
+                <div class="form-field" style="margin:0">
+                  <label>Hora (opcional)</label>
+                  <input type="time" id="match-time" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none;width:100%;color-scheme:dark">
+                </div>
               </div>
             </div>
+            <!-- ELIMINATORIA -->
             <div id="form-elim" style="display:none">
-              <div class="match-form-extra">
-                <div class="form-field"><label>Fase</label>
+              <div class="match-form-2" style="margin-bottom:10px">
+                <div class="form-field" style="margin:0">
+                  <label>Fase</label>
                   <select id="elim-phase">
                     <option value="Dieciseisavos">Dieciseisavos de Final</option>
                     <option value="Octavos">Octavos de Final</option>
@@ -279,7 +327,14 @@
                     <option value="Final">Final</option>
                   </select>
                 </div>
-                <div class="form-field"><label>Etiqueta del cruce</label><input type="text" id="elim-label" placeholder="Ej: Partido 1 · 29 Jun"></div>
+                <div class="form-field" style="margin:0">
+                  <label>Fecha del partido</label>
+                  <input type="date" id="elim-date">
+                </div>
+              </div>
+              <div class="form-field" style="margin:0">
+                <label>Etiqueta del cruce</label>
+                <input type="text" id="elim-label" placeholder="Ej: Partido 1 · 1A vs 2B">
               </div>
             </div>
             <button class="btn btn-primary" onclick="addMatch()">Agregar Partido</button>
@@ -291,7 +346,7 @@
         </div>
         <div class="admin-section">
           <h3>👥 Participantes</h3>
-          <div class="admin-users-list" id="admin-users"></div>
+          <div id="admin-users"></div>
         </div>
       </div>
     </div>
@@ -299,6 +354,9 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- DATALIST para países en resultados eliminatorios del admin -->
+<datalist id="paises-list"></datalist>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -316,6 +374,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const ADMIN_PASS = 'ProdeUTE2026';
+
 const PHASES = ['Grupos','Dieciseisavos','Octavos','Cuartos','Semifinal','Tercero','Final'];
 const PHASE_LABELS = {
   Grupos:'Fase de Grupos', Dieciseisavos:'Dieciseisavos de Final',
@@ -324,14 +383,57 @@ const PHASE_LABELS = {
 };
 const ELIM_PHASES = ['Dieciseisavos','Octavos','Cuartos','Semifinal','Tercero','Final'];
 
+// 48 selecciones clasificadas al Mundial 2026
+const PAISES = [
+  {name:'Argentina',flag:'🇦🇷'},{name:'Brasil',flag:'🇧🇷'},{name:'Uruguay',flag:'🇺🇾'},
+  {name:'Colombia',flag:'🇨🇴'},{name:'Ecuador',flag:'🇪🇨'},{name:'Paraguay',flag:'🇵🇾'},
+  {name:'Bolivia',flag:'🇧🇴'},{name:'Venezuela',flag:'🇻🇪'},{name:'Chile',flag:'🇨🇱'},
+  {name:'Perú',flag:'🇵🇪'},{name:'México',flag:'🇲🇽'},{name:'Estados Unidos',flag:'🇺🇸'},
+  {name:'Canadá',flag:'🇨🇦'},{name:'Costa Rica',flag:'🇨🇷'},{name:'Honduras',flag:'🇭🇳'},
+  {name:'El Salvador',flag:'🇸🇻'},{name:'Panamá',flag:'🇵🇦'},{name:'Jamaica',flag:'🇯🇲'},
+  {name:'Trinidad y Tobago',flag:'🇹🇹'},{name:'Cuba',flag:'🇨🇺'},
+  {name:'Francia',flag:'🇫🇷'},{name:'España',flag:'🇪🇸'},{name:'Alemania',flag:'🇩🇪'},
+  {name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{name:'Portugal',flag:'🇵🇹'},{name:'Holanda',flag:'🇳🇱'},
+  {name:'Bélgica',flag:'🇧🇪'},{name:'Italia',flag:'🇮🇹'},{name:'Croacia',flag:'🇭🇷'},
+  {name:'Serbia',flag:'🇷🇸'},{name:'Suiza',flag:'🇨🇭'},{name:'Austria',flag:'🇦🇹'},
+  {name:'Turquía',flag:'🇹🇷'},{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{name:'Dinamarca',flag:'🇩🇰'},
+  {name:'Polonia',flag:'🇵🇱'},{name:'Hungría',flag:'🇭🇺'},{name:'Eslovaquia',flag:'🇸🇰'},
+  {name:'Ucrania',flag:'🇺🇦'},{name:'Grecia',flag:'🇬🇷'},{name:'Albania',flag:'🇦🇱'},
+  {name:'Japón',flag:'🇯🇵'},{name:'Corea del Sur',flag:'🇰🇷'},{name:'Arabia Saudita',flag:'🇸🇦'},
+  {name:'Australia',flag:'🇦🇺'},{name:'Irán',flag:'🇮🇷'},{name:'Qatar',flag:'🇶🇦'},
+  {name:'Uzbekistán',flag:'🇺🇿'},{name:'Jordania',flag:'🇯🇴'},
+  {name:'Marruecos',flag:'🇲🇦'},{name:'Senegal',flag:'🇸🇳'},{name:'Nigeria',flag:'🇳🇬'},
+  {name:'Costa de Marfil',flag:'🇨🇮'},{name:'Camerún',flag:'🇨🇲'},{name:'Mali',flag:'🇲🇱'},
+  {name:'Sudáfrica',flag:'🇿🇦'},{name:'Kenia',flag:'🇰🇪'},{name:'Túnez',flag:'🇹🇳'},
+  {name:'Egipto',flag:'🇪🇬'},{name:'Ghana',flag:'🇬🇭'}
+].sort((a,b)=>a.name.localeCompare(b.name));
+
 let matches=[], predictions={}, results={}, lockedPhases={};
-let currentUser=null, activePredictPhase=null, adminLogged=false, matchTipo='grupos';
+let currentUser=null, adminLogged=false, matchTipo='grupos';
+
+// ── AUTOCOMPLETE ──
+window.acInput=function(inp,dropId){
+  const q=inp.value.trim().toLowerCase();
+  const drop=document.getElementById(dropId);
+  if(!q){drop.classList.remove('open');drop.innerHTML='';return;}
+  const filtered=PAISES.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8);
+  if(!filtered.length){drop.classList.remove('open');return;}
+  drop.innerHTML=filtered.map(p=>`<div class="autocomplete-item" onmousedown="acSelect('${inp.id}','${dropId}','${p.name}')"><span class="flag">${p.flag}</span>${p.name}</div>`).join('');
+  drop.classList.add('open');
+};
+window.acSelect=function(inpId,dropId,name){
+  document.getElementById(inpId).value=name;
+  const drop=document.getElementById(dropId);
+  drop.classList.remove('open'); drop.innerHTML='';
+};
+window.acBlur=function(dropId){
+  setTimeout(()=>{const d=document.getElementById(dropId);if(d){d.classList.remove('open');}},200);
+};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function isElim(ph){return ELIM_PHASES.includes(ph)}
 function isLocked(ph){return !!lockedPhases[ph]}
-function hasPhase(ph){return matches.some(m=>m.phase===ph)}
 
 function toast(msg,err=false){
   const t=document.getElementById('toast');
@@ -339,11 +441,26 @@ function toast(msg,err=false){
   clearTimeout(t._t); t._t=setTimeout(()=>{t.className='toast'},3200);
 }
 
+function fmtDate(dateStr){
+  if(!dateStr)return'';
+  try{
+    const [y,m,d]=dateStr.split('-');
+    const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return `${parseInt(d)} ${months[parseInt(m)-1]}`;
+  }catch{return dateStr;}
+}
+
 // ── LISTENERS ──
 onSnapshot(collection(db,'matches'),snap=>{
   matches=[];
   snap.forEach(d=>matches.push({id:d.id,...d.data()}));
-  matches.sort((a,b)=>{const p=PHASES.indexOf(a.phase)-PHASES.indexOf(b.phase);return p!==0?p:(a.createdAt||0)-(b.createdAt||0)});
+  matches.sort((a,b)=>{
+    const p=PHASES.indexOf(a.phase)-PHASES.indexOf(b.phase);
+    if(p!==0)return p;
+    const da=a.date||'9999-99-99', db2=b.date||'9999-99-99';
+    if(da!==db2)return da.localeCompare(db2);
+    return(a.createdAt||0)-(b.createdAt||0);
+  });
   refreshAll();
 });
 onSnapshot(collection(db,'predictions'),snap=>{
@@ -364,7 +481,7 @@ onSnapshot(collection(db,'lockedPhases'),snap=>{
 });
 
 function refreshAll(){
-  if(currentUser) renderPredictContent();
+  if(currentUser)renderPredictContent();
   if(adminLogged){renderAdminMatches();renderAdminUsers();}
   renderScores(); renderView();
 }
@@ -386,81 +503,118 @@ window.loadUserPredictions=function(){
   if(!name){toast('Ingresá tu nombre primero',true);return;}
   currentUser=name;
   const s=document.getElementById('user-status');
-  s.className='user-status'; s.textContent='Nombre cargado. Completá tus picks fase por fase.';
+  s.className='user-status';
+  s.textContent='✔ Bienvenido/a, '+name+'. Completá y guardá fase por fase.';
   renderPredictContent();
 };
 
 function getPhaseSaved(ph){
-  const up=predictions[currentUser]||{};
-  return !!(up['__saved_'+ph]);
+  return !!(predictions[currentUser]||{})['__saved_'+ph];
 }
 
 function renderPredictContent(){
   const c=document.getElementById('predict-content');
   if(!currentUser){c.innerHTML='';return;}
-  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-  if(phases.length===0){
+  if(matches.length===0){
     c.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:40px">⏳ El admin aún no cargó los partidos.</div>';
     return;
   }
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   c.innerHTML=phases.map(ph=>renderPhaseBlock(ph)).join('');
 }
 
 function renderPhaseBlock(ph){
   const locked=isLocked(ph);
   const saved=getPhaseSaved(ph);
+  // La fase está editable si está abierta (no locked), haya sido guardada o no
+  const editable=!locked;
+  const disabled=locked?'disabled':'';
   const phMatches=matches.filter(m=>m.phase===ph);
   const up=predictions[currentUser]||{};
-  const disabled=(locked||saved)?'disabled':'';
 
   let statusBadge='';
   if(locked) statusBadge='<span class="phase-status-badge badge-locked">🔒 Cerrada</span>';
-  else if(saved) statusBadge='<span class="phase-status-badge badge-locked">✔ Guardada</span>';
+  else if(saved) statusBadge='<span class="phase-status-badge badge-saved">✔ Guardada</span>';
   else statusBadge='<span class="phase-status-badge badge-open">✏ Abierta</span>';
 
-  let matchesHtml='';
-  if(isElim(ph)){
-    matchesHtml=`<div class="info-box">✏️ Escribí los equipos que creés que llegan a cada cruce y el resultado esperado.</div>`
-      +phMatches.map(m=>{
-        const pred=up[m.id]||{};
-        const res=results[m.id];
-        const resHtml=res?`<div class="elim-real-result">✅ Resultado real: <strong>${esc(res.teamH)}</strong> ${res.h} - ${res.a} <strong>${esc(res.teamA)}</strong></div>`:'';
-        return `<div class="elim-card">
-          <div class="elim-card-title">🏆 ${esc(m.label||PHASE_LABELS[ph])}</div>
-          <div class="elim-row">
-            <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local" maxlength="30">
-            <div class="elim-vs">VS</div>
-            <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante" maxlength="30">
-          </div>
-          <div class="elim-score-row">
-            <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!==undefined&&pred.h!==null?pred.h:''}" placeholder="0">
-            <span class="score-sep" style="font-size:16px">-</span>
-            <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!==undefined&&pred.a!==null?pred.a:''}" placeholder="0">
-          </div>
-          ${resHtml}
-        </div>`;
-      }).join('');
+  let bodyHtml='';
+  if(locked && !saved){
+    bodyHtml=`<div class="phase-locked-msg">🔒 Esta fase está cerrada. No cargaste predicciones para esta fase.</div>`;
   } else {
-    matchesHtml=phMatches.map(m=>{
-      const pred=up[m.id]||{};
-      return `<div class="match-card">
-        <div class="match-team home">${esc(m.home)}</div>
-        <div class="score-inputs">
-          <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!==undefined?pred.h:''}" placeholder="0">
-          <span class="score-sep">-</span>
-          <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!==undefined?pred.a:''}" placeholder="0">
-        </div>
-        <div class="match-team away">${esc(m.away)}</div>
-      </div>${m.date?`<div class="match-date">${esc(m.date)}</div>`:''}`;
-    }).join('');
+    if(isElim(ph)){
+      bodyHtml=`<div class="info-box">✏️ Escribí los equipos que creés que llegan a cada cruce y el resultado esperado.</div>
+        <div class="matches-grid">`+phMatches.map(m=>{
+          const pred=up[m.id]||{};
+          const res=results[m.id];
+          const resHtml=res?`<div class="elim-real-result">✅ Resultado real: <strong>${esc(res.teamH)}</strong> ${res.h} - ${res.a} <strong>${esc(res.teamA)}</strong></div>`:'';
+          return `<div class="elim-card">
+            <div class="elim-card-title">🏆 ${esc(m.label||PHASE_LABELS[ph])}${m.date?` · ${fmtDate(m.date)}`:''}${m.time?` ${esc(m.time)}`:''}hs</div>
+            <div class="elim-row">
+              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-th')" onblur="acBlur('pdrop-${m.id}-th')" onfocus="acInput(this,'pdrop-${m.id}-th')">
+              <div class="elim-vs">VS</div>
+              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-ta')" onblur="acBlur('pdrop-${m.id}-ta')" onfocus="acInput(this,'pdrop-${m.id}-ta')">
+            </div>
+            <div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
+            <div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
+            <div class="elim-score-row">
+              <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!=null?pred.h:''}" placeholder="0">
+              <span class="score-sep" style="font-size:15px">-</span>
+              <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!=null?pred.a:''}" placeholder="0">
+            </div>
+            ${resHtml}
+          </div>`;
+        }).join('')+'</div>';
+    } else {
+      // Agrupar por fecha
+      const byDate={};
+      phMatches.forEach(m=>{
+        const k=m.date||'sin-fecha';
+        if(!byDate[k])byDate[k]=[];
+        byDate[k].push(m);
+      });
+      const sortedDates=Object.keys(byDate).sort((a,b)=>{
+        if(a==='sin-fecha')return 1; if(b==='sin-fecha')return -1;
+        return a.localeCompare(b);
+      });
+
+      bodyHtml=sortedDates.map(dk=>{
+        const dateLabel=dk==='sin-fecha'?'Sin fecha asignada':fmtDate(dk)+' '+new Date(dk+'T12:00:00').toLocaleDateString('es',{weekday:'long'});
+        // Agrupar por grupo dentro de la fecha
+        const byGroup={};
+        byDate[dk].forEach(m=>{
+          const g=m.group||'';
+          if(!byGroup[g])byGroup[g]=[];
+          byGroup[g].push(m);
+        });
+        const groupsHtml=Object.keys(byGroup).sort().map(g=>{
+          const gLabel=g?`<div class="group-sub-header">${esc(g)}</div>`:'';
+          const mHtml=byGroup[g].map(m=>{
+            const pred=up[m.id]||{};
+            return `<div class="match-card">
+              <div class="match-team home">${esc(m.home)}</div>
+              <div class="score-inputs">
+                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!==undefined?pred.h:''}" placeholder="0">
+                <span class="score-sep">-</span>
+                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!==undefined?pred.a:''}" placeholder="0">
+              </div>
+              <div class="match-team away">${esc(m.away)}</div>
+            </div>${m.time?`<div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;margin-top:-2px;margin-bottom:4px">${esc(m.time)}hs</div>`:''}`;
+          }).join('');
+          return gLabel+mHtml;
+        }).join('');
+        return `<div class="date-group-header">📅 ${dateLabel}</div><div class="matches-grid">${groupsHtml}</div>`;
+      }).join('');
+    }
   }
 
   let saveBar='';
   if(locked){
-    saveBar=`<div class="phase-save-bar"><span class="phase-save-info">🔒 Esta fase fue cerrada por el administrador.</span></div>`;
+    saveBar=`<div class="phase-save-bar"><span class="phase-save-info">🔒 Fase cerrada por el administrador.</span></div>`;
   } else if(saved){
-    saveBar=`<div class="phase-save-bar"><span class="phase-save-info">✔ Picks guardados. Podés editarlos mientras la fase esté abierta.</span>
-      <button class="btn btn-secondary btn-sm" onclick="editPhase('${ph}')">✏ Editar</button></div>`;
+    saveBar=`<div class="phase-save-bar">
+      <span class="phase-save-info">✔ Guardado. Podés seguir editando mientras la fase esté abierta.</span>
+      <button class="btn btn-success btn-sm" onclick="savePhase('${ph}')">💾 Actualizar picks</button>
+    </div>`;
   } else {
     saveBar=`<div class="phase-save-bar">
       <span class="phase-save-info">Guardá antes de que el admin cierre la fase</span>
@@ -468,22 +622,20 @@ function renderPhaseBlock(ph){
     </div>`;
   }
 
-  return `<div class="phase-block">
+  const blockClass=locked?'phase-block locked-phase':'phase-block';
+  return `<div class="${blockClass}">
     <div class="phase-block-header">
       <div class="phase-block-title">${PHASE_LABELS[ph]} ${statusBadge}</div>
     </div>
-    <div class="phase-block-body">
-      <div class="matches-grid">${matchesHtml}</div>
-      ${saveBar}
-    </div>
+    <div class="phase-block-body">${bodyHtml}${saveBar}</div>
   </div>`;
 }
 
 window.savePhase=async function(ph){
   if(!currentUser){toast('Ingresá tu nombre primero',true);return;}
-  if(isLocked(ph)){toast('Esta fase ya está cerrada',true);return;}
+  if(isLocked(ph)){toast('Esta fase está cerrada por el admin',true);return;}
   const phMatches=matches.filter(m=>m.phase===ph);
-  const up=predictions[currentUser]||{};
+  const up={...(predictions[currentUser]||{})};
   let count=0;
   phMatches.forEach(m=>{
     if(isElim(m.phase)){
@@ -492,12 +644,12 @@ window.savePhase=async function(ph){
       const h=document.getElementById('pred-'+m.id+'-h');
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!th)return;
-      const thv=th.value.trim(),tav=ta.value.trim(),hv=h.value.trim(),av=a.value.trim();
+      const thv=th.value.trim(),tav=ta.value.trim(),hv=h?.value.trim()||'',av=a?.value.trim()||'';
       if(thv||tav||hv||av){
         up[m.id]={teamH:thv,teamA:tav,h:hv!==''?parseInt(hv):null,a:av!==''?parseInt(av):null};
         count++;
       }
-    } else {
+    }else{
       const h=document.getElementById('pred-'+m.id+'-h');
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!h)return;
@@ -511,16 +663,6 @@ window.savePhase=async function(ph){
     await setDoc(doc(db,'predictions',currentUser),up);
     toast('✔ Picks de '+PHASE_LABELS[ph]+' guardados');
   }catch(e){toast('Error al guardar',true);}
-};
-
-window.editPhase=async function(ph){
-  if(isLocked(ph)){toast('Esta fase está cerrada por el admin',true);return;}
-  const up=predictions[currentUser]||{};
-  delete up['__saved_'+ph];
-  try{
-    await setDoc(doc(db,'predictions',currentUser),up);
-    toast('Podés editar los picks de '+PHASE_LABELS[ph]);
-  }catch(e){toast('Error',true);}
 };
 
 // ── PUNTAJE ──
@@ -539,7 +681,7 @@ function calcScore(name){
       if(!ok)return;
       if(pred.h===res.h&&pred.a===res.a){pts+=3;exact++;}
       else{const rs=Math.sign(res.h-res.a),ps=Math.sign(pred.h-pred.a);if(rs===ps){pts+=1;winner++;}}
-    } else {
+    }else{
       if(pred.h===undefined||pred.a===undefined)return;
       total++;
       if(pred.h===res.h&&pred.a===res.a){pts+=3;exact++;}
@@ -564,10 +706,9 @@ function renderScores(){
       <td>${r.exact}</td><td>${r.winner}</td><td>${r.total}</td>
     </tr>`).join('')}</tbody>
   </table></div>
-  <div style="margin-top:16px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px">🟢 Resultado exacto = 3 pts &nbsp;|&nbsp; 🟡 Ganador correcto = 1 pt</div>`;
+  <div style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px">🟢 Resultado exacto = 3 pts &nbsp;|&nbsp; 🟡 Ganador correcto = 1 pt</div>`;
 }
 
-// ── VER PRONÓSTICOS ──
 function renderView(){
   const names=Object.keys(predictions).filter(n=>!n.startsWith('__'));
   const c=document.getElementById('view-content');
@@ -598,22 +739,22 @@ function renderUserBody(name){
       const pred=up[m.id],res=results[m.id];
       if(isElim(ph)){
         if(!pred||(!pred.teamH&&!pred.teamA)){
-          html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.3)">Sin predicción</div></div>`;
+          html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.25)">Sin predicción</div></div>`;
           return;
         }
         const predH=norm(pred.teamH),predA=norm(pred.teamA);
         const resH=res?norm(res.teamH):'',resA=res?norm(res.teamA):'';
-        const teamsOk=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
+        const ok=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
         let cls='pending',pts='';
-        if(res&&teamsOk){
+        if(res&&ok){
           if(pred.h===res.h&&pred.a===res.a){cls='exact';pts=' +3pts';}
           else{const rs=Math.sign(res.h-res.a),ps=Math.sign((pred.h||0)-(pred.a||0));if(rs===ps){cls='winner';pts=' +1pt';}else cls='wrong';}
-        }else if(res&&!teamsOk){cls='wrong';}
+        }else if(res&&!ok)cls='wrong';
         html+=`<div class="pred-elim-row">
           <div class="pred-elim-label">${esc(m.label||'Cruce')}</div>
           <div class="pred-elim-content pred-score ${cls}">${esc(pred.teamH||'?')} ${pred.h??'?'} - ${pred.a??'?'} ${esc(pred.teamA||'?')}${pts}</div>
         </div>`;
-      } else {
+      }else{
         let cls='pending',score='–';
         if(pred&&pred.h!==undefined){
           score=`${pred.h} - ${pred.a}`;
@@ -671,20 +812,24 @@ window.addMatch=async function(){
     if(matchTipo==='grupos'){
       const home=document.getElementById('match-home').value.trim();
       const away=document.getElementById('match-away').value.trim();
-      const group=document.getElementById('match-group').value.trim();
-      const date=document.getElementById('match-date').value.trim();
+      const group=document.getElementById('match-group').value;
+      const date=document.getElementById('match-date').value;
+      const time=document.getElementById('match-time').value;
       if(!home||!away){toast('Ingresá ambos equipos',true);return;}
-      await setDoc(doc(db,'matches',id),{home,away,phase:'Grupos',group,date,createdAt:Date.now()});
+      await setDoc(doc(db,'matches',id),{home,away,phase:'Grupos',group,date,time,createdAt:Date.now()});
       document.getElementById('match-home').value='';
       document.getElementById('match-away').value='';
       document.getElementById('match-group').value='';
       document.getElementById('match-date').value='';
+      document.getElementById('match-time').value='';
     }else{
       const phase=document.getElementById('elim-phase').value;
       const label=document.getElementById('elim-label').value.trim();
+      const date=document.getElementById('elim-date').value;
       if(!label){toast('Ingresá una etiqueta para el cruce',true);return;}
-      await setDoc(doc(db,'matches',id),{phase,label,isElim:true,createdAt:Date.now()});
+      await setDoc(doc(db,'matches',id),{phase,label,date,isElim:true,createdAt:Date.now()});
       document.getElementById('elim-label').value='';
+      document.getElementById('elim-date').value='';
     }
     toast('✔ Partido agregado');
   }catch(e){toast('Error al guardar',true);}
@@ -692,11 +837,13 @@ window.addMatch=async function(){
 
 window.toggleLockPhase=async function(ph){
   const wasLocked=isLocked(ph);
-  const msg=wasLocked?`¿Reabrir la fase "${PHASE_LABELS[ph]}"?`:`¿Cerrar la fase "${PHASE_LABELS[ph]}"? Los participantes ya no podrán editar sus picks.`;
+  const msg=wasLocked
+    ?`¿Reabrir la fase "${PHASE_LABELS[ph]}"? Los usuarios podrán editar sus picks.`
+    :`¿Cerrar la fase "${PHASE_LABELS[ph]}"? Los usuarios ya no podrán editar sus picks.`;
   if(!confirm(msg))return;
   try{
     await setDoc(doc(db,'lockedPhases',ph),{locked:!wasLocked});
-    toast(wasLocked?`✔ Fase reabierta`:`🔒 Fase cerrada`);
+    toast(wasLocked?'✔ Fase reabierta':'🔒 Fase cerrada');
   }catch(e){toast('Error',true);}
 };
 
@@ -742,13 +889,9 @@ window.deleteUser=async function(name){
   if(!confirm(`¿Eliminar a "${name}"?`))return;
   try{await deleteDoc(doc(db,'predictions',name));toast(`"${name}" eliminado`);}catch(e){toast('Error',true);}
 };
-window.resetUser=async function(name){
-  if(!confirm(`¿Resetear todos los picks de "${name}"?`))return;
-  try{await deleteDoc(doc(db,'predictions',name));toast(`Picks de "${name}" reseteados`);}catch(e){toast('Error',true);}
-};
 window.resetUserPhase=async function(name,ph){
   if(!confirm(`¿Resetear los picks de "${name}" para ${PHASE_LABELS[ph]}?`))return;
-  const up=predictions[name]||{};
+  const up={...(predictions[name]||{})};
   matches.filter(m=>m.phase===ph).forEach(m=>{delete up[m.id];});
   delete up['__saved_'+ph];
   try{await setDoc(doc(db,'predictions',name),up);toast(`Picks de ${PHASE_LABELS[ph]} reseteados para "${name}"`);}catch(e){toast('Error',true);}
@@ -757,7 +900,7 @@ window.resetUserPhase=async function(name,ph){
 function renderAdminMatches(){
   const c=document.getElementById('admin-matches');
   if(!c)return;
-  if(matches.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">No hay partidos cargados.</div>';return;}
+  if(matches.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:16px 0">No hay partidos cargados.</div>';return;}
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   c.innerHTML=phases.map(ph=>{
     const locked=isLocked(ph);
@@ -765,24 +908,23 @@ function renderAdminMatches(){
       ?`<button class="btn btn-secondary btn-sm" onclick="toggleLockPhase('${ph}')">🔓 Reabrir fase</button>`
       :`<button class="btn btn-warning btn-sm" onclick="toggleLockPhase('${ph}')">🔒 Cerrar fase</button>`;
     const phMatches=matches.filter(m=>m.phase===ph);
-    const matchesHtml=phMatches.map(m=>{
+    const mHtml=phMatches.map(m=>{
       const res=results[m.id];
       const elimFlag=isElim(m.phase);
       const nameHtml=elimFlag
-        ?`<span class="badge-elim">ELIM</span> ${esc(m.label||'Cruce')}`
-        :`<span class="badge-grupos">GRP</span> ${esc(m.home)} vs ${esc(m.away)}${m.group?' · '+esc(m.group):''}${m.date?' · '+esc(m.date):''}`;
+        ?`<span class="badge-elim">ELIM</span> ${esc(m.label||'Cruce')}${m.date?' · '+fmtDate(m.date):''}`
+        :`<span class="badge-grupos">GRP</span> ${esc(m.home)} vs ${esc(m.away)}${m.group?' · '+esc(m.group):''}${m.date?' · '+fmtDate(m.date):''}${m.time?' '+esc(m.time)+'hs':''}`;
       let resHtml='';
       if(res){
         const str=elimFlag?`${esc(res.teamH)} ${res.h}-${res.a} ${esc(res.teamA)}`:`${res.h}-${res.a}`;
-        resHtml=`<span class="result-badge-ok">${str}</span>
-          <button class="btn btn-secondary btn-sm" onclick="clearResult('${m.id}')">✏</button>`;
+        resHtml=`<span class="result-badge-ok">${str}</span><button class="btn btn-secondary btn-sm" onclick="clearResult('${m.id}')">✏</button>`;
       }else if(elimFlag){
         resHtml=`<div class="result-inline">
-          <input type="text" id="res-${m.id}-th" placeholder="Local" style="min-width:90px">
+          <input type="text" id="res-${m.id}-th" placeholder="Local" list="paises-list" style="min-width:80px">
           <input type="number" min="0" max="99" id="res-${m.id}-h" placeholder="0">
           <span style="color:rgba(255,255,255,.4);font-weight:800">-</span>
           <input type="number" min="0" max="99" id="res-${m.id}-a" placeholder="0">
-          <input type="text" id="res-${m.id}-ta" placeholder="Visitante" style="min-width:90px">
+          <input type="text" id="res-${m.id}-ta" placeholder="Visitante" list="paises-list" style="min-width:80px">
           <button class="btn btn-success btn-sm" onclick="saveResult('${m.id}',true)">Guardar</button>
         </div>`;
       }else{
@@ -795,21 +937,15 @@ function renderAdminMatches(){
       }
       return`<div class="admin-match-item">
         <div><div class="admin-match-name">${nameHtml}</div></div>
-        <div class="admin-match-actions">
-          ${resHtml}
-          <button class="btn btn-danger btn-sm" onclick="deleteMatch('${m.id}')">🗑</button>
-        </div>
+        <div class="admin-match-actions">${resHtml}<button class="btn btn-danger btn-sm" onclick="deleteMatch('${m.id}')">🗑</button></div>
       </div>`;
     }).join('');
     return`<div class="phase-admin-block">
       <div class="phase-admin-header">
-        <div class="phase-admin-title">
-          ${PHASE_LABELS[ph]}
-          <span class="phase-status-badge ${locked?'badge-locked':'badge-open'}">${locked?'🔒 Cerrada':'✏ Abierta'}</span>
-        </div>
+        <div class="phase-admin-title">${PHASE_LABELS[ph]} <span class="phase-status-badge ${locked?'badge-locked':'badge-open'}">${locked?'🔒 Cerrada':'✏ Abierta'}</span></div>
         ${lockBtn}
       </div>
-      <div class="phase-admin-matches">${matchesHtml}</div>
+      <div class="phase-admin-matches">${mHtml}</div>
     </div>`;
   }).join('');
 }
@@ -818,23 +954,28 @@ function renderAdminUsers(){
   const c=document.getElementById('admin-users');
   if(!c)return;
   const names=Object.keys(predictions).filter(n=>!n.startsWith('__'));
-  if(names.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">Nadie cargó predicciones todavía.</div>';return;}
+  if(names.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:16px 0">Nadie cargó predicciones todavía.</div>';return;}
+  const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
   c.innerHTML=names.map(n=>{
     const s=calcScore(n);
-    const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-    const phaseResets=phases.map(ph=>`<button class="btn btn-secondary btn-sm" onclick="resetUserPhase('${esc(n)}','${ph}')" title="Resetear ${PHASE_LABELS[ph]}">↩ ${PHASE_LABELS[ph]}</button>`).join('');
+    const resets=phases.map(ph=>`<button class="btn btn-secondary btn-sm" onclick="resetUserPhase('${esc(n)}','${ph}')">↩ ${PHASE_LABELS[ph]}</button>`).join('');
     return`<div class="admin-user-item">
       <div>
         <div class="admin-user-name">${esc(n)}</div>
         <div class="admin-user-meta">${s.pts} pts · ${s.total} partido(s) evaluado(s)</div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        ${phaseResets}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+        ${resets}
         <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(n)}')">🗑 Eliminar</button>
       </div>
     </div>`;
   }).join('');
 }
+
+// Poblar datalist de países para resultados admin
+const dl=document.getElementById('paises-list');
+PAISES.forEach(p=>{const o=document.createElement('option');o.value=p.name;dl.appendChild(o);});
+
 </script>
 </body>
 </html>
