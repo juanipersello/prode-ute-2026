@@ -294,7 +294,8 @@
               <label>Tipo</label>
               <div class="type-toggle">
                 <button class="type-btn active" id="tipo-grupos" onclick="setTipo('grupos')">⚽ Fase de Grupos</button>
-                <button class="type-btn" id="tipo-elim" onclick="setTipo('elim')">🏆 Eliminatoria</button>
+                <button class="type-btn" id="tipo-16avos" onclick="setTipo('16avos')">🔟 16avos de Final</button>
+                <button class="type-btn" id="tipo-elim" onclick="setTipo('elim')">🏆 Octavos → Final</button>
               </div>
             </div>
             <!-- GRUPOS -->
@@ -337,13 +338,42 @@
                 </div>
               </div>
             </div>
-            <!-- ELIMINATORIA -->
+            <!-- 16AVOS -->
+            <div id="form-16avos" style="display:none">
+              <div class="match-form-row" style="margin-bottom:10px">
+                <div class="form-field" style="margin:0">
+                  <label>Equipo Local</label>
+                  <div class="autocomplete-wrap">
+                    <input class="autocomplete-input" id="match16-home" placeholder="Buscar país..." autocomplete="off" oninput="acInput(this,'drop16-home')" onblur="acBlur('drop16-home')" onfocus="acInput(this,'drop16-home')">
+                    <div class="autocomplete-dropdown" id="drop16-home"></div>
+                  </div>
+                </div>
+                <div class="match-form-vs">VS</div>
+                <div class="form-field" style="margin:0">
+                  <label>Equipo Visitante</label>
+                  <div class="autocomplete-wrap">
+                    <input class="autocomplete-input" id="match16-away" placeholder="Buscar país..." autocomplete="off" oninput="acInput(this,'drop16-away')" onblur="acBlur('drop16-away')" onfocus="acInput(this,'drop16-away')">
+                    <div class="autocomplete-dropdown" id="drop16-away"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="match-form-2">
+                <div class="form-field" style="margin:0">
+                  <label>Fecha del partido</label>
+                  <input type="date" id="match16-date">
+                </div>
+                <div class="form-field" style="margin:0">
+                  <label>Hora (opcional)</label>
+                  <input type="time" id="match16-time" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none;width:100%;color-scheme:dark">
+                </div>
+              </div>
+            </div>
+            <!-- ELIMINATORIA (Octavos en adelante) -->
             <div id="form-elim" style="display:none">
               <div class="match-form-2" style="margin-bottom:10px">
                 <div class="form-field" style="margin:0">
                   <label>Fase</label>
                   <select id="elim-phase">
-                    <option value="Dieciseisavos">Dieciseisavos de Final</option>
                     <option value="Octavos">Octavos de Final</option>
                     <option value="Cuartos">Cuartos de Final</option>
                     <option value="Semifinal">Semifinal</option>
@@ -358,7 +388,7 @@
               </div>
               <div class="form-field" style="margin:0">
                 <label>Etiqueta del cruce</label>
-                <input type="text" id="elim-label" placeholder="Ej: Partido 1 · 1A vs 2B">
+                <input type="text" id="elim-label" placeholder="Ej: Partido 1 · 1C vs 2D">
               </div>
             </div>
             <button class="btn btn-primary" onclick="addMatch()">Agregar Partido</button>
@@ -1023,8 +1053,10 @@ window.adminLogout=function(){
 window.setTipo=function(t){
   matchTipo=t;
   document.getElementById('form-grupos').style.display=t==='grupos'?'':'none';
+  document.getElementById('form-16avos').style.display=t==='16avos'?'':'none';
   document.getElementById('form-elim').style.display=t==='elim'?'':'none';
   document.getElementById('tipo-grupos').classList.toggle('active',t==='grupos');
+  document.getElementById('tipo-16avos').classList.toggle('active',t==='16avos');
   document.getElementById('tipo-elim').classList.toggle('active',t==='elim');
 };
 
@@ -1044,6 +1076,17 @@ window.addMatch=async function(){
       document.getElementById('match-group').value='';
       document.getElementById('match-date').value='';
       document.getElementById('match-time').value='';
+    }else if(matchTipo==='16avos'){
+      const home=document.getElementById('match16-home').value.trim();
+      const away=document.getElementById('match16-away').value.trim();
+      const date=document.getElementById('match16-date').value;
+      const time=document.getElementById('match16-time').value;
+      if(!home||!away){toast('Ingresá ambos equipos',true);return;}
+      await setDoc(doc(db,'matches',id),{home,away,phase:'Dieciseisavos',date,time,createdAt:Date.now()});
+      document.getElementById('match16-home').value='';
+      document.getElementById('match16-away').value='';
+      document.getElementById('match16-date').value='';
+      document.getElementById('match16-time').value='';
     }else{
       const phase=document.getElementById('elim-phase').value;
       const label=document.getElementById('elim-label').value.trim();
@@ -1133,14 +1176,16 @@ function renderAdminMatches(){
     const mHtml=phMatches.map(m=>{
       const res=results[m.id];
       const elimFlag=isElim(m.phase);
-      const nameHtml=elimFlag
+      const nameHtml=m.phase==='Dieciseisavos'
+        ?`<span class="badge-elim" style="background:rgba(212,160,23,.2);color:var(--dorado)">16AVOS</span> ${esc(m.home)} vs ${esc(m.away)}${m.date?' · '+fmtDate(m.date):''}${m.time?' '+esc(m.time)+'hs':''}`
+        :elimFlag
         ?`<span class="badge-elim">ELIM</span> ${esc(m.label||'Cruce')}${m.date?' · '+fmtDate(m.date):''}`
         :`<span class="badge-grupos">GRP</span> ${esc(m.home)} vs ${esc(m.away)}${m.group?' · '+esc(m.group):''}${m.date?' · '+fmtDate(m.date):''}${m.time?' '+esc(m.time)+'hs':''}`;
       let resHtml='';
       if(res){
-        const str=elimFlag?`${esc(res.teamH)} ${res.h}-${res.a} ${esc(res.teamA)}`:`${res.h}-${res.a}`;
+        const str=(elimFlag&&m.phase!=='Dieciseisavos')?`${esc(res.teamH)} ${res.h}-${res.a} ${esc(res.teamA)}`:`${res.h}-${res.a}`;
         resHtml=`<span class="result-badge-ok">${str}</span><button class="btn btn-secondary btn-sm" onclick="clearResult('${m.id}')">✏</button>`;
-      }else if(elimFlag){
+      }else if(elimFlag&&m.phase!=='Dieciseisavos'){
         resHtml=`<div class="result-inline">
           <input type="text" id="res-${m.id}-th" placeholder="Local" list="paises-list" style="min-width:80px">
           <input type="number" min="0" max="99" id="res-${m.id}-h" placeholder="0">
