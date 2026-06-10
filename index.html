@@ -105,7 +105,7 @@
   input[type=date]{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none;width:100%;color-scheme:dark}
   input[type=date]:focus{border-color:var(--dorado)}
 
-  /* TABLA */
+  /* TABLA PUNTAJES */
   .scores-table-wrap{overflow-x:auto}
   .scores-table{width:100%;border-collapse:collapse;font-size:15px}
   .scores-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);padding:12px 16px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -184,6 +184,29 @@
   .loading-text{font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:2px;color:rgba(255,255,255,.5)}
   .empty-state{text-align:center;padding:60px 20px;color:rgba(255,255,255,.3)}
   .empty-state .icon{font-size:48px;margin-bottom:16px}
+
+  /* TABLAS DE GRUPOS SIMULADAS */
+  .sim-section{margin-top:12px}
+  .sim-section-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:8px;padding-bottom:10px;border-bottom:1px solid rgba(212,160,23,.3)}
+  .sim-section-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:20px;line-height:1.5}
+  .sim-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .sim-group-block{background:var(--gris-medio);border-radius:var(--radio);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+  .sim-group-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);padding:11px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+  .sim-table{width:100%;border-collapse:collapse;font-size:12px}
+  .sim-table th{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.35);padding:7px 10px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)}
+  .sim-table th:first-child{text-align:left;padding-left:14px}
+  .sim-table td{padding:8px 10px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04);color:var(--blanco)}
+  .sim-table td:first-child{text-align:left;padding-left:14px}
+  .sim-table tr:last-child td{border-bottom:none}
+  .sim-row-pass td{background:rgba(0,154,68,.07)}
+  .sim-row-third td{background:rgba(212,160,23,.04)}
+  .sim-team-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
+  .sim-pos-icon{margin-right:4px;font-size:11px}
+  .sim-dg-pos{color:#4dcd7f}
+  .sim-dg-neg{color:#f07080}
+  .sim-pts{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:var(--dorado)}
+  .sim-incomplete-note{font-size:11px;color:rgba(255,255,255,.25);font-style:italic;padding:10px 14px}
+
   @media(max-width:600px){
     .match-card{grid-template-columns:1fr;text-align:center;gap:8px}
     .match-team.home,.match-team.away{text-align:center}
@@ -194,6 +217,7 @@
     .match-form-vs{display:none}
     .match-form-3,.match-form-2{grid-template-columns:1fr}
     .admin-match-item{grid-template-columns:1fr}
+    .sim-groups-grid{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -354,8 +378,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
-<!-- DATALIST para países en resultados eliminatorios del admin -->
 <datalist id="paises-list"></datalist>
 
 <script type="module">
@@ -383,7 +405,6 @@ const PHASE_LABELS = {
 };
 const ELIM_PHASES = ['Dieciseisavos','Octavos','Cuartos','Semifinal','Tercero','Final'];
 
-// 48 selecciones clasificadas al Mundial 2026
 const PAISES = [
   {name:'Argentina',flag:'🇦🇷'},{name:'Brasil',flag:'🇧🇷'},{name:'Uruguay',flag:'🇺🇾'},
   {name:'Colombia',flag:'🇨🇴'},{name:'Ecuador',flag:'🇪🇨'},{name:'Paraguay',flag:'🇵🇾'},
@@ -520,14 +541,13 @@ function renderPredictContent(){
     return;
   }
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-  c.innerHTML=phases.map(ph=>renderPhaseBlock(ph)).join('');
+  // Fases + tablas simuladas al final
+  c.innerHTML = phases.map(ph=>renderPhaseBlock(ph)).join('') + renderGroupTables(currentUser);
 }
 
 function renderPhaseBlock(ph){
   const locked=isLocked(ph);
   const saved=getPhaseSaved(ph);
-  // La fase está editable si está abierta (no locked), haya sido guardada o no
-  const editable=!locked;
   const disabled=locked?'disabled':'';
   const phMatches=matches.filter(m=>m.phase===ph);
   const up=predictions[currentUser]||{};
@@ -565,7 +585,6 @@ function renderPhaseBlock(ph){
           </div>`;
         }).join('')+'</div>';
     } else {
-      // Agrupar por fecha
       const byDate={};
       phMatches.forEach(m=>{
         const k=m.date||'sin-fecha';
@@ -579,7 +598,6 @@ function renderPhaseBlock(ph){
 
       bodyHtml=sortedDates.map(dk=>{
         const dateLabel=dk==='sin-fecha'?'Sin fecha asignada':fmtDate(dk)+' '+new Date(dk+'T12:00:00').toLocaleDateString('es',{weekday:'long'});
-        // Agrupar por grupo dentro de la fecha
         const byGroup={};
         byDate[dk].forEach(m=>{
           const g=m.group||'';
@@ -664,6 +682,145 @@ window.savePhase=async function(ph){
     toast('✔ Picks de '+PHASE_LABELS[ph]+' guardados');
   }catch(e){toast('Error al guardar',true);}
 };
+
+// ── TABLAS DE GRUPOS SIMULADAS ──
+function renderGroupTables(userName){
+  const up = predictions[userName] || {};
+
+  // Solo partidos de fase de grupos que tengan grupo asignado
+  const groupMatches = matches.filter(m => m.phase === 'Grupos' && m.group);
+  if(groupMatches.length === 0) return '';
+
+  // Agrupar por grupo
+  const byGroup = {};
+  groupMatches.forEach(m => {
+    if(!byGroup[m.group]) byGroup[m.group] = [];
+    byGroup[m.group].push(m);
+  });
+
+  const groupKeys = Object.keys(byGroup).sort();
+  let tablesHtml = '';
+  let anyComplete = false;
+
+  groupKeys.forEach(g => {
+    const gMatches = byGroup[g];
+
+    // Verificar que el usuario cargó todos los partidos del grupo
+    const complete = gMatches.every(m => {
+      const p = up[m.id];
+      return p && p.h !== undefined && p.h !== '' && p.h !== null &&
+                 p.a !== undefined && p.a !== '' && p.a !== null;
+    });
+    if(!complete) return;
+    anyComplete = true;
+
+    // Inicializar tabla de posiciones
+    const table = {};
+    const addTeam = t => {
+      if(!table[t]) table[t] = {pts:0, pj:0, g:0, e:0, p:0, gf:0, gc:0};
+    };
+
+    // Calcular resultados según picks del usuario
+    gMatches.forEach(m => {
+      const pred = up[m.id];
+      const h = parseInt(pred.h);
+      const a = parseInt(pred.a);
+      addTeam(m.home);
+      addTeam(m.away);
+
+      table[m.home].pj++;
+      table[m.away].pj++;
+      table[m.home].gf += h;
+      table[m.home].gc += a;
+      table[m.away].gf += a;
+      table[m.away].gc += h;
+
+      if(h > a){
+        // Gana local
+        table[m.home].g++;
+        table[m.home].pts += 3;
+        table[m.away].p++;
+      } else if(h < a){
+        // Gana visitante
+        table[m.away].g++;
+        table[m.away].pts += 3;
+        table[m.home].p++;
+      } else {
+        // Empate
+        table[m.home].e++;
+        table[m.home].pts++;
+        table[m.away].e++;
+        table[m.away].pts++;
+      }
+    });
+
+    // Ordenar: 1) Puntos  2) Diferencia de goles  3) Goles a favor
+    const sorted = Object.entries(table).sort((a, b) => {
+      const [, ta] = a, [, tb] = b;
+      if(tb.pts !== ta.pts) return tb.pts - ta.pts;
+      const dga = ta.gf - ta.gc, dgb = tb.gf - tb.gc;
+      if(dgb !== dga) return dgb - dga;
+      return tb.gf - ta.gf;
+    });
+
+    const rowsHtml = sorted.map(([team, s], i) => {
+      const dg = s.gf - s.gc;
+      const dgStr = dg > 0 ? `<span class="sim-dg-pos">+${dg}</span>` : dg < 0 ? `<span class="sim-dg-neg">${dg}</span>` : `<span style="color:rgba(255,255,255,.4)">0</span>`;
+      // Posición: 1ro y 2do pasan directo, 3ro puede pasar como mejor tercero, 4to eliminado
+      let posIcon = '';
+      if(i === 0) posIcon = '<span class="sim-pos-icon" title="Clasificado directo">🟢</span>';
+      else if(i === 1) posIcon = '<span class="sim-pos-icon" title="Clasificado directo">🟢</span>';
+      else if(i === 2) posIcon = '<span class="sim-pos-icon" title="Posible mejor tercero">🟡</span>';
+      else posIcon = '<span class="sim-pos-icon" title="Eliminado">🔴</span>';
+
+      const rowClass = i < 2 ? 'sim-row-pass' : i === 2 ? 'sim-row-third' : '';
+      return `<tr class="${rowClass}">
+        <td><span class="sim-team-name">${posIcon}${esc(team)}</span></td>
+        <td>${s.pj}</td>
+        <td>${s.g}</td>
+        <td>${s.e}</td>
+        <td>${s.p}</td>
+        <td>${s.gf}</td>
+        <td>${s.gc}</td>
+        <td>${dgStr}</td>
+        <td><span class="sim-pts">${s.pts}</span></td>
+      </tr>`;
+    }).join('');
+
+    tablesHtml += `
+      <div class="sim-group-block">
+        <div class="sim-group-title">${esc(g)}</div>
+        <table class="sim-table">
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th title="Partidos jugados">PJ</th>
+              <th title="Ganados">G</th>
+              <th title="Empatados">E</th>
+              <th title="Perdidos">P</th>
+              <th title="Goles a favor">GF</th>
+              <th title="Goles en contra">GC</th>
+              <th title="Diferencia de goles">DG</th>
+              <th title="Puntos">Pts</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+  });
+
+  if(!anyComplete) return '';
+
+  return `
+    <div class="sim-section">
+      <div class="sim-section-title">📊 Tus grupos simulados</div>
+      <p class="sim-section-sub">
+        Basado en tus picks · Criterio: Pts → DG → GF ·
+        🟢 Clasifica directo &nbsp;🟡 Posible mejor tercero &nbsp;🔴 Eliminado
+      </p>
+      <div class="sim-groups-grid">${tablesHtml}</div>
+    </div>`;
+}
 
 // ── PUNTAJE ──
 function calcScore(name){
@@ -972,7 +1129,7 @@ function renderAdminUsers(){
   }).join('');
 }
 
-// Poblar datalist de países para resultados admin
+// Poblar datalist de países
 const dl=document.getElementById('paises-list');
 PAISES.forEach(p=>{const o=document.createElement('option');o.value=p.name;dl.appendChild(o);});
 
