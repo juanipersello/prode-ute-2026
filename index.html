@@ -561,7 +561,27 @@ function renderPhaseBlock(ph){
   if(locked && !saved){
     bodyHtml=`<div class="phase-locked-msg">🔒 Esta fase está cerrada. No cargaste predicciones para esta fase.</div>`;
   } else {
-    if(isElim(ph)){
+    if(ph === 'Dieciseisavos'){
+      // 16avos: equipos fijos, solo predecir resultado (igual que grupos)
+      bodyHtml=`<div class="info-box">⚽ Los equipos ya están definidos. Solo predecí el resultado de cada partido.</div>
+        <div class="matches-grid">`+phMatches.map(m=>{
+          const pred=up[m.id]||{};
+          const res=results[m.id];
+          const resHtml=res?`<div style="font-size:11px;color:#4dcd7f;text-align:center;margin-top:4px;font-family:'Barlow Condensed',sans-serif;font-weight:700">✅ Real: ${res.h} - ${res.a}</div>`:'';
+          return `<div class="match-card">
+            <div class="match-team home">${esc(m.home||m.label||'Local')}</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div class="score-inputs">
+                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!==undefined&&pred.h!==null?pred.h:''}" placeholder="0">
+                <span class="score-sep">-</span>
+                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!==undefined&&pred.a!==null?pred.a:''}" placeholder="0">
+              </div>
+              ${resHtml}
+            </div>
+            <div class="match-team away">${esc(m.away||'Visitante')}</div>
+          </div>${m.date?`<div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;margin-top:-2px;margin-bottom:4px">${fmtDate(m.date)}${m.time?' · '+esc(m.time)+'hs':''}</div>`:''}`;
+        }).join('')+'</div>';
+    } else if(isElim(ph)){
       bodyHtml=`<div class="info-box">✏️ Escribí los equipos que creés que llegan a cada cruce y el resultado esperado.</div>
         <div class="matches-grid">`+phMatches.map(m=>{
           const pred=up[m.id]||{};
@@ -656,7 +676,15 @@ window.savePhase=async function(ph){
   const up={...(predictions[currentUser]||{})};
   let count=0;
   phMatches.forEach(m=>{
-    if(isElim(m.phase)){
+    if(m.phase==='Dieciseisavos'){
+      // 16avos: solo resultado, equipos fijos
+      const h=document.getElementById('pred-'+m.id+'-h');
+      const a=document.getElementById('pred-'+m.id+'-a');
+      if(!h)return;
+      const hv=h.value.trim(),av=a.value.trim();
+      if(hv!==''&&av!==''){up[m.id]={h:parseInt(hv),a:parseInt(av)};count++;}
+    }else if(isElim(m.phase)){
+      // Octavos en adelante: equipos + resultado
       const th=document.getElementById('pred-'+m.id+'-th');
       const ta=document.getElementById('pred-'+m.id+'-ta');
       const h=document.getElementById('pred-'+m.id+'-h');
@@ -825,27 +853,44 @@ function renderGroupTables(userName){
 // ── PUNTAJE ──
 function calcScore(name){
   const up=predictions[name]||{};
-  let pts=0,exact=0,winner=0,total=0;
+  let pts=0,exact=0,winner=0,teamsOk=0,total=0;
   matches.forEach(m=>{
     const res=results[m.id],pred=up[m.id];
     if(!res||!pred)return;
-    if(isElim(m.phase)){
+    if(m.phase==='Dieciseisavos'){
+      // 16avos: equipos fijos, puntaje igual a grupos
+      if(pred.h===undefined||pred.h===null||pred.a===undefined||pred.a===null)return;
+      total++;
+      const ph=parseInt(pred.h),pa=parseInt(pred.a);
+      if(ph===res.h&&pa===res.a){pts+=3;exact++;}
+      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){pts+=1;winner++;}}
+    }else if(isElim(m.phase)){
+      // Octavos en adelante: equipos variables
+      // Opción A: equipos ok (cualquier orden) + resultado
       const predH=norm(pred.teamH),predA=norm(pred.teamA);
       const resH=norm(res.teamH),resA=norm(res.teamA);
       if(pred.h===null||pred.a===null||!predH||!predA)return;
       total++;
       const ok=(predH===resH&&predA===resA)||(predH===resA&&predA===resH);
-      if(!ok)return;
-      if(pred.h===res.h&&pred.a===res.a){pts+=3;exact++;}
-      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(pred.h-pred.a);if(rs===ps){pts+=1;winner++;}}
+      if(!ok)return; // equipos mal = 0 pts
+      teamsOk++;
+      const ph=parseInt(pred.h),pa=parseInt(pred.a);
+      if(ph===res.h&&pa===res.a){pts+=4;exact++;} // equipos ok + exacto = 4pts
+      else{
+        const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);
+        if(rs===ps){pts+=2;winner++;} // equipos ok + ganador = 2pts
+        else{pts+=1;} // equipos ok + resultado mal = 1pt
+      }
     }else{
+      // Grupos
       if(pred.h===undefined||pred.a===undefined)return;
       total++;
-      if(pred.h===res.h&&pred.a===res.a){pts+=3;exact++;}
-      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(pred.h-pred.a);if(rs===ps){pts+=1;winner++;}}
+      const ph=parseInt(pred.h),pa=parseInt(pred.a);
+      if(ph===res.h&&pa===res.a){pts+=3;exact++;}
+      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){pts+=1;winner++;}}
     }
   });
-  return{pts,exact,winner,total};
+  return{pts,exact,winner,teamsOk,total};
 }
 
 function renderScores(){
@@ -863,7 +908,10 @@ function renderScores(){
       <td>${r.exact}</td><td>${r.winner}</td><td>${r.total}</td>
     </tr>`).join('')}</tbody>
   </table></div>
-  <div style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px">🟢 Resultado exacto = 3 pts &nbsp;|&nbsp; 🟡 Ganador correcto = 1 pt</div>`;
+  <div style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px">
+    Grupos/16avos: 🟢 Exacto = 3pts &nbsp;|&nbsp; 🟡 Ganador = 1pt<br>
+    Octavos→Final: ✅ Equipos+Exacto = 4pts &nbsp;|&nbsp; 🟡 Equipos+Ganador = 2pts &nbsp;|&nbsp; ➡️ Equipos+Resultado mal = 1pt
+  </div>`;
 }
 
 function renderView(){
@@ -894,7 +942,23 @@ function renderUserBody(name){
     html+=`<div class="pred-phase-header">${PHASE_LABELS[ph]||ph}</div>`;
     matches.filter(m=>m.phase===ph).forEach(m=>{
       const pred=up[m.id],res=results[m.id];
-      if(isElim(ph)){
+      if(ph==='Dieciseisavos'){
+        // 16avos: muestra como grupos
+        let cls='pending',score='–';
+        if(pred&&pred.h!==undefined&&pred.h!==null){
+          score=`${pred.h} - ${pred.a}`;
+          if(res){
+            const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
+            if(ph2===res.h&&pa2===res.a)cls='exact';
+            else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);cls=rs===ps?'winner':'wrong';}
+          }
+        }
+        html+=`<div class="pred-match-row">
+          <div class="pred-team-home">${esc(m.home||m.label||'Local')}</div>
+          <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
+          <div class="pred-team-away">${esc(m.away||'Visitante')}</div>
+        </div>`;
+      }else if(isElim(ph)){
         if(!pred||(!pred.teamH&&!pred.teamA)){
           html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.25)">Sin predicción</div></div>`;
           return;
@@ -904,8 +968,9 @@ function renderUserBody(name){
         const ok=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
         let cls='pending',pts='';
         if(res&&ok){
-          if(pred.h===res.h&&pred.a===res.a){cls='exact';pts=' +3pts';}
-          else{const rs=Math.sign(res.h-res.a),ps=Math.sign((pred.h||0)-(pred.a||0));if(rs===ps){cls='winner';pts=' +1pt';}else cls='wrong';}
+          const ph=parseInt(pred.h),pa=parseInt(pred.a);
+          if(ph===res.h&&pa===res.a){cls='exact';pts=' +4pts';}
+          else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){cls='winner';pts=' +2pts';}else{cls='wrong';pts=' +1pt';}}
         }else if(res&&!ok)cls='wrong';
         html+=`<div class="pred-elim-row">
           <div class="pred-elim-label">${esc(m.label||'Cruce')}</div>
