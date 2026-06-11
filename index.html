@@ -207,6 +207,7 @@
   .sim-pts{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:var(--dorado)}
   .sim-incomplete-note{font-size:11px;color:rgba(255,255,255,.25);font-style:italic;padding:10px 14px}
 
+  #pin-modal.open{display:flex!important}
   @media(max-width:600px){
     .match-card{grid-template-columns:1fr;text-align:center;gap:8px}
     .match-team.home,.match-team.away{text-align:center}
@@ -408,6 +409,26 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL PIN -->
+<div id="pin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--gris-medio);border-radius:var(--radio);padding:36px;width:320px;border:1px solid rgba(255,255,255,.12);text-align:center">
+    <div id="pin-modal-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;letter-spacing:2px;color:var(--dorado);margin-bottom:8px"></div>
+    <div id="pin-modal-sub" style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:22px;line-height:1.5"></div>
+    <input type="password" id="pin-input" maxlength="4" placeholder="••••"
+      style="width:100%;text-align:center;font-size:28px;letter-spacing:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:14px;color:white;outline:none;font-family:'Barlow Condensed',sans-serif;font-weight:800"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+      onkeydown="if(event.key==='Enter')pinConfirm()">
+    <div id="pin-confirm-wrap" style="display:none;margin-top:10px">
+      <input type="password" id="pin-input-confirm" maxlength="4" placeholder="Repetir PIN"
+        style="width:100%;text-align:center;font-size:28px;letter-spacing:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:14px;color:white;outline:none;font-family:'Barlow Condensed',sans-serif;font-weight:800"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+        onkeydown="if(event.key==='Enter')pinConfirm()">
+    </div>
+    <div id="pin-error" style="color:var(--rojo);font-size:13px;margin-top:10px;min-height:18px"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="pinConfirm()">Confirmar</button>
+  </div>
+</div>
 <datalist id="paises-list"></datalist>
 
 <script type="module">
@@ -459,8 +480,9 @@ const PAISES = [
   {name:'Egipto',flag:'🇪🇬'},{name:'Ghana',flag:'🇬🇭'}
 ].sort((a,b)=>a.name.localeCompare(b.name));
 
-let matches=[], predictions={}, results={}, lockedPhases={};
+let matches=[], predictions={}, results={}, lockedPhases={}, pins={};
 let currentUser=null, adminLogged=false, matchTipo='grupos';
+let _pinCallback=null, _pinMode=null, _pinName=null;
 
 // ── AUTOCOMPLETE ──
 window.acInput=function(inp,dropId){
@@ -525,6 +547,11 @@ onSnapshot(collection(db,'results'),snap=>{
   refreshAll();
   document.getElementById('loading-overlay').style.display='none';
 });
+onSnapshot(collection(db,'pins'),snap=>{
+  pins={};
+  snap.forEach(d=>{pins[d.id]=d.data().pin});
+  // no hace falta refreshAll, pins no afecta el render
+});
 onSnapshot(collection(db,'lockedPhases'),snap=>{
   lockedPhases={};
   snap.forEach(d=>{lockedPhases[d.id]=d.data().locked});
@@ -552,11 +579,88 @@ window.showPage=function(p){
 window.loadUserPredictions=function(){
   const name=document.getElementById('user-name-input').value.trim();
   if(!name){toast('Ingresá tu nombre primero',true);return;}
+  const existente=predictions[name]!==undefined;
+  const tienePIN=pins[name]!==undefined;
+  if(!existente){
+    // Usuario nuevo: crear PIN
+    showPinModal('nuevo', name, async(pin)=>{
+      await setPin(name,pin);
+      enterUser(name);
+    });
+  }else if(!tienePIN){
+    // Usuario existente sin PIN: asignar uno
+    showPinModal('asignar', name, async(pin)=>{
+      await setPin(name,pin);
+      enterUser(name);
+    });
+  }else{
+    // Usuario con PIN: verificar
+    showPinModal('verificar', name, (pin)=>{
+      if(pin===pins[name]){
+        enterUser(name);
+      }else{
+        document.getElementById('pin-error').textContent='❌ PIN incorrecto';
+        document.getElementById('pin-input').value='';
+        document.getElementById('pin-input').focus();
+      }
+    });
+  }
+};
+
+async function setPin(name,pin){
+  try{ await setDoc(doc(db,'pins',name),{pin}); }catch(e){ toast('Error guardando PIN',true); }
+}
+
+function enterUser(name){
+  closePinModal();
   currentUser=name;
   const s=document.getElementById('user-status');
   s.className='user-status';
   s.textContent='✔ Bienvenido/a, '+name+'. Completá y guardá fase por fase.';
   renderPredictContent();
+}
+
+function showPinModal(mode, name, callback){
+  _pinMode=mode; _pinName=name; _pinCallback=callback;
+  const modal=document.getElementById('pin-modal');
+  const title=document.getElementById('pin-modal-title');
+  const sub=document.getElementById('pin-modal-sub');
+  const confirmWrap=document.getElementById('pin-confirm-wrap');
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-input-confirm').value='';
+  document.getElementById('pin-error').textContent='';
+  if(mode==='nuevo'){
+    title.textContent='Crear PIN';
+    sub.innerHTML='Sos nuevo/a. Elegí un PIN de 4 dígitos<br>para proteger tus picks.';
+    confirmWrap.style.display='block';
+  }else if(mode==='asignar'){
+    title.textContent='Crear PIN';
+    sub.innerHTML='Ya tenés picks guardados. Ahora necesitás<br>crear un PIN de 4 dígitos para seguir.';
+    confirmWrap.style.display='block';
+  }else{
+    title.textContent='Ingresá tu PIN';
+    sub.innerHTML='Hola <strong>'+esc(name)+'</strong>.<br>Ingresá tu PIN de 4 dígitos.';
+    confirmWrap.style.display='none';
+  }
+  modal.classList.add('open');
+  setTimeout(()=>document.getElementById('pin-input').focus(),100);
+}
+
+function closePinModal(){
+  document.getElementById('pin-modal').classList.remove('open');
+  _pinCallback=null; _pinMode=null; _pinName=null;
+}
+
+window.pinConfirm=function(){
+  const pin=document.getElementById('pin-input').value.trim();
+  const err=document.getElementById('pin-error');
+  if(pin.length!==4){err.textContent='El PIN debe tener 4 dígitos';return;}
+  if(_pinMode==='nuevo'||_pinMode==='asignar'){
+    const confirm=document.getElementById('pin-input-confirm').value.trim();
+    if(pin!==confirm){err.textContent='Los PINs no coinciden';return;}
+  }
+  err.textContent='';
+  if(_pinCallback)_pinCallback(pin);
 };
 
 function getPhaseSaved(ph){
@@ -733,7 +837,12 @@ window.savePhase=async function(ph){
       if(hv!==''&&av!==''){up[m.id]={h:parseInt(hv),a:parseInt(av)};count++;}
     }
   });
-  if(count===0){toast('Completá al menos un partido de esta fase',true);return;}
+  const total=phMatches.length;
+  if(count<total){
+    const faltantes=total-count;
+    toast('Faltan '+faltantes+' partido'+(faltantes>1?'s':'')+' por completar',true);
+    return;
+  }
   up['__saved_'+ph]=true;
   try{
     await setDoc(doc(db,'predictions',currentUser),up);
@@ -1152,7 +1261,19 @@ window.clearResult=async function(id){
 
 window.deleteUser=async function(name){
   if(!confirm(`¿Eliminar a "${name}"?`))return;
-  try{await deleteDoc(doc(db,'predictions',name));toast(`"${name}" eliminado`);}catch(e){toast('Error',true);}
+  try{
+    await deleteDoc(doc(db,'predictions',name));
+    await deleteDoc(doc(db,'pins',name));
+    toast(`"${name}" eliminado`);
+  }catch(e){toast('Error',true);}
+};
+
+window.resetPin=async function(name){
+  if(!confirm(`¿Resetear el PIN de "${name}"? La próxima vez que entre deberá crear uno nuevo.`))return;
+  try{
+    await deleteDoc(doc(db,'pins',name));
+    toast(`PIN de "${name}" reseteado`);
+  }catch(e){toast('Error',true);}
 };
 window.resetUserPhase=async function(name,ph){
   if(!confirm(`¿Resetear los picks de "${name}" para ${PHASE_LABELS[ph]}?`))return;
@@ -1229,10 +1350,11 @@ function renderAdminUsers(){
     return`<div class="admin-user-item">
       <div>
         <div class="admin-user-name">${esc(n)}</div>
-        <div class="admin-user-meta">${s.pts} pts · ${s.total} partido(s) evaluado(s)</div>
+        <div class="admin-user-meta">${s.pts} pts · ${s.total} partido(s) evaluado(s) · ${pins[n]?'🔒 Con PIN':'⚠️ Sin PIN'}</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
         ${resets}
+        <button class="btn btn-secondary btn-sm" onclick="resetPin('${esc(n)}')">🔑 Reset PIN</button>
         <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(n)}')">🗑 Eliminar</button>
       </div>
     </div>`;
