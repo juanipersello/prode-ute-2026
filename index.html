@@ -17,7 +17,23 @@
   .header h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;letter-spacing:3px;color:white;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.5)}
   .header h1 span{color:var(--dorado-claro)}
   .header-flags{font-size:22px;letter-spacing:4px}
-  .subtitle{width:100%;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:4px;color:rgba(255,255,255,.7);text-transform:uppercase;padding-bottom:14px}
+  .subtitle{width:100%;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:4px;color:rgba(255,255,255,.7);text-transform:uppercase;padding-bottom:6px}
+  .header-info-bar{position:relative;display:flex;align-items:stretch;justify-content:space-between;padding:0 20px 14px;gap:16px;flex-wrap:wrap}
+  .header-info-block{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:160px;flex:1}
+  .header-info-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+  .header-info-value{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:white;letter-spacing:1px}
+  .header-info-value.dorado{color:var(--dorado-claro)}
+  .header-countdown{display:flex;gap:8px;align-items:baseline}
+  .countdown-unit{display:flex;flex-direction:column;align-items:center}
+  .countdown-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:var(--dorado-claro);line-height:1}
+  .countdown-lbl{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+  .countdown-sep{font-size:18px;font-weight:900;color:rgba(255,255,255,.3);margin-bottom:4px}
+  .today-matches{display:flex;flex-direction:column;gap:4px;width:100%}
+  .today-match-row{display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px}
+  .today-match-score{color:var(--dorado-claro);font-size:15px;font-weight:900}
+  .today-match-score.live{color:#4dcd7f;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .header-divider{width:1px;background:rgba(255,255,255,.1);margin:0 4px}
   .nav{background:var(--gris-medio);display:flex;border-bottom:3px solid var(--dorado);overflow-x:auto}
   .nav button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);background:none;border:none;padding:14px 24px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .2s}
   .nav button:hover{color:white;background:rgba(255,255,255,.05)}
@@ -238,6 +254,33 @@
     <div class="header-flags">🇺🇸🇨🇦🇲🇽</div>
   </div>
   <div class="subtitle">USA · Canadá · México – Junio / Julio 2026</div>
+  <div class="header-info-bar" id="header-info-bar">
+    <!-- Partidos de hoy -->
+    <div class="header-info-block" id="header-today">
+      <div class="header-info-label">Partidos de hoy</div>
+      <div class="header-info-value" id="header-today-content" style="color:rgba(255,255,255,.3);font-size:12px">Cargando...</div>
+    </div>
+    <div class="header-divider"></div>
+    <!-- Countdown -->
+    <div class="header-info-block" id="header-countdown-block">
+      <div class="header-info-label" id="header-countdown-label">Próximo partido</div>
+      <div class="header-countdown" id="header-countdown">
+        <div class="countdown-unit"><span class="countdown-num" id="cd-d">--</span><span class="countdown-lbl">días</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-unit"><span class="countdown-num" id="cd-h">--</span><span class="countdown-lbl">hs</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-unit"><span class="countdown-num" id="cd-m">--</span><span class="countdown-lbl">min</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-unit"><span class="countdown-num" id="cd-s">--</span><span class="countdown-lbl">seg</span></div>
+      </div>
+    </div>
+    <div class="header-divider"></div>
+    <!-- Campeón más elegido -->
+    <div class="header-info-block" id="header-champion-block" style="display:none">
+      <div class="header-info-label">Campeón favorito del grupo</div>
+      <div class="header-info-value dorado" id="header-champion-value">–</div>
+    </div>
+  </div>
 </div>
 
 <nav class="nav">
@@ -571,6 +614,7 @@ function refreshAll(){
   if(currentUser)renderPredictContent();
   if(adminLogged){renderAdminMatches();renderAdminUsers();}
   renderScores(); renderView();
+  updateHeaderInfo();
 }
 
 // ── NAV ──
@@ -1404,6 +1448,126 @@ window.removeException=async function(name,ph){
     toast(`🔒 Acceso de ${esc(name)} a ${PHASE_LABELS[ph]} removido`);
   }catch(e){toast('Error',true);}
 };
+
+// ── HEADER INFO ──
+function updateHeaderInfo(){
+  updateTodayMatches();
+  updateCountdown();
+  updateChampion();
+}
+
+function todayStr(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=String(now.getMonth()+1).padStart(2,'0');
+  const d=String(now.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function updateTodayMatches(){
+  const today=todayStr();
+  const todayMatches=matches.filter(m=>m.date===today);
+  const el=document.getElementById('header-today-content');
+  if(!el)return;
+  if(todayMatches.length===0){
+    el.innerHTML='<span style="color:rgba(255,255,255,.3);font-size:12px">Sin partidos hoy</span>';
+    return;
+  }
+  el.innerHTML='';
+  const wrap=document.createElement('div');
+  wrap.className='today-matches';
+  todayMatches.forEach(m=>{
+    const res=results[m.id];
+    const row=document.createElement('div');
+    row.className='today-match-row';
+    const homeName=m.home||(m.label||'?');
+    const awayName=m.away||'?';
+    if(res){
+      row.innerHTML=`<span>${esc(homeName)}</span><span class="today-match-score">${res.h} - ${res.a}</span><span>${esc(awayName)}</span>`;
+    }else{
+      const timeStr=m.time?`<span style="color:rgba(255,255,255,.4);font-size:11px">${esc(m.time)}hs</span>`:'';
+      row.innerHTML=`<span>${esc(homeName)}</span>${timeStr}<span style="color:rgba(255,255,255,.3)">vs</span>${timeStr?'':'<span style="color:rgba(255,255,255,.3)">vs</span>'}<span>${esc(awayName)}</span>`;
+      // simplify
+      row.innerHTML=`<span style="color:rgba(255,255,255,.8)">${esc(homeName)}</span><span style="color:rgba(255,255,255,.3);font-size:11px">${m.time?esc(m.time)+'hs':'vs'}</span><span style="color:rgba(255,255,255,.8)">${esc(awayName)}</span>`;
+    }
+    wrap.appendChild(row);
+  });
+  el.appendChild(wrap);
+}
+
+function updateCountdown(){
+  // Buscar próximo partido con fecha futura
+  const today=todayStr();
+  const upcoming=matches
+    .filter(m=>m.date&&m.date>=today)
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  const lbl=document.getElementById('header-countdown-label');
+  if(!upcoming.length){
+    document.getElementById('cd-d').textContent='--';
+    document.getElementById('cd-h').textContent='--';
+    document.getElementById('cd-m').textContent='--';
+    document.getElementById('cd-s').textContent='--';
+    if(lbl)lbl.textContent='Sin próximos partidos';
+    return;
+  }
+  const next=upcoming[0];
+  const timeStr=next.time||'00:00';
+  const target=new Date(`${next.date}T${timeStr}:00-03:00`); // Argentina UTC-3
+  const name=next.home?`${next.home} vs ${next.away}`:(next.label||'Próximo partido');
+  if(lbl)lbl.textContent=name.length>22?name.slice(0,20)+'…':name;
+
+  function tick(){
+    const diff=target-new Date();
+    if(diff<=0){
+      document.getElementById('cd-d').textContent='00';
+      document.getElementById('cd-h').textContent='00';
+      document.getElementById('cd-m').textContent='00';
+      document.getElementById('cd-s').textContent='00';
+      return;
+    }
+    const dd=Math.floor(diff/86400000);
+    const hh=Math.floor((diff%86400000)/3600000);
+    const mm=Math.floor((diff%3600000)/60000);
+    const ss=Math.floor((diff%60000)/1000);
+    document.getElementById('cd-d').textContent=String(dd).padStart(2,'0');
+    document.getElementById('cd-h').textContent=String(hh).padStart(2,'0');
+    document.getElementById('cd-m').textContent=String(mm).padStart(2,'0');
+    document.getElementById('cd-s').textContent=String(ss).padStart(2,'0');
+  }
+  tick();
+  if(window._countdownInterval)clearInterval(window._countdownInterval);
+  window._countdownInterval=setInterval(tick,1000);
+}
+
+function updateChampion(){
+  // Contar equipos elegidos como campeón (teamH o teamA de la Final)
+  const finalMatches=matches.filter(m=>m.phase==='Final');
+  if(!finalMatches.length)return;
+  const block=document.getElementById('header-champion-block');
+  const val=document.getElementById('header-champion-value');
+  if(!block||!val)return;
+  const count={};
+  Object.entries(predictions).forEach(([user,preds])=>{
+    if(user.startsWith('__'))return;
+    finalMatches.forEach(m=>{
+      const pred=preds[m.id];
+      if(!pred)return;
+      // El campeón es el equipo que gana (el que tenga más goles)
+      if(pred.teamH&&pred.teamA&&pred.h!=null&&pred.a!=null){
+        const winner=pred.h>pred.a?pred.teamH:pred.h<pred.a?pred.teamA:null;
+        if(winner){count[winner]=(count[winner]||0)+1;}
+      }
+    });
+  });
+  const entries=Object.entries(count).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){block.style.display='none';return;}
+  block.style.display='';
+  const [champ,votes]=entries[0];
+  val.textContent=`${esc(champ)} (${votes} voto${votes!==1?'s':''})`;
+}
+
+// Actualizar header cuando cambian los datos
+const _origRefreshAll=refreshAll;
 
 // Poblar datalist de países
 const dl=document.getElementById('paises-list');
