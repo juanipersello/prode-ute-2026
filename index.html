@@ -480,7 +480,7 @@ const PAISES = [
   {name:'Egipto',flag:'🇪🇬'},{name:'Ghana',flag:'🇬🇭'}
 ].sort((a,b)=>a.name.localeCompare(b.name));
 
-let matches=[], predictions={}, results={}, lockedPhases={}, pins={};
+let matches=[], predictions={}, results={}, lockedPhases={}, pins={}, exceptions={};
 let currentUser=null, adminLogged=false, matchTipo='grupos';
 let _pinCallback=null, _pinMode=null, _pinName=null;
 
@@ -506,7 +506,12 @@ window.acBlur=function(dropId){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function isElim(ph){return ELIM_PHASES.includes(ph)}
-function isLocked(ph){return !!lockedPhases[ph]}
+function isLocked(ph,user){
+  if(!lockedPhases[ph])return false; // fase abierta para todos
+  const u=user||currentUser;
+  if(!u)return true;
+  return !(exceptions[u]||[]).includes(ph); // si tiene excepción, no está locked
+}
 
 function toast(msg,err=false){
   const t=document.getElementById('toast');
@@ -551,6 +556,10 @@ onSnapshot(collection(db,'pins'),snap=>{
   pins={};
   snap.forEach(d=>{pins[d.id]=d.data().pin});
   // no hace falta refreshAll, pins no afecta el render
+});
+onSnapshot(collection(db,'exceptions'),snap=>{
+  exceptions={};
+  snap.forEach(d=>{exceptions[d.id]=d.data().phases||[]});
 });
 onSnapshot(collection(db,'lockedPhases'),snap=>{
   lockedPhases={};
@@ -805,7 +814,7 @@ function renderPhaseBlock(ph){
 
 window.savePhase=async function(ph){
   if(!currentUser){toast('Ingresá tu nombre primero',true);return;}
-  if(isLocked(ph)){toast('Esta fase está cerrada por el admin',true);return;}
+  if(isLocked(ph,currentUser)){toast('Esta fase está cerrada por el admin',true);return;}
   const phMatches=matches.filter(m=>m.phase===ph);
   const up={...(predictions[currentUser]||{})};
   let count=0;
@@ -1347,19 +1356,54 @@ function renderAdminUsers(){
   c.innerHTML=names.map(n=>{
     const s=calcScore(n);
     const resets=phases.map(ph=>`<button class="btn btn-secondary btn-sm" onclick="resetUserPhase('${esc(n)}','${ph}')">↩ ${PHASE_LABELS[ph]}</button>`).join('');
-    return`<div class="admin-user-item">
-      <div>
-        <div class="admin-user-name">${esc(n)}</div>
-        <div class="admin-user-meta">${s.pts} pts · ${s.total} partido(s) evaluado(s) · ${pins[n]?'🔒 Con PIN':'⚠️ Sin PIN'}</div>
+    // Fases cerradas globalmente con excepción individual
+    const lockedPhasesList=phases.filter(ph=>isLocked(ph,null));
+    const excList=exceptions[n]||[];
+    const excBtns=lockedPhasesList.map(ph=>{
+      const hasExc=excList.includes(ph);
+      return hasExc
+        ?`<button class="btn btn-warning btn-sm" onclick="removeException('${esc(n)}','${ph}')">🔓 Quitar acceso ${PHASE_LABELS[ph]}</button>`
+        :`<button class="btn btn-success btn-sm" onclick="addException('${esc(n)}','${ph}')">🔓 Abrir ${PHASE_LABELS[ph]}</button>`;
+    }).join('');
+    return`<div class="admin-user-item" style="flex-direction:column;align-items:flex-start">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="admin-user-name">${esc(n)}</div>
+          <div class="admin-user-meta">${s.pts} pts · ${s.total} partido(s) evaluado(s) · ${pins[n]?'🔒 Con PIN':'⚠️ Sin PIN'}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-secondary btn-sm" onclick="resetPin('${esc(n)}')">🔑 Reset PIN</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(n)}')">🗑 Eliminar</button>
+        </div>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-        ${resets}
-        <button class="btn btn-secondary btn-sm" onclick="resetPin('${esc(n)}')">🔑 Reset PIN</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(n)}')">🗑 Eliminar</button>
-      </div>
+      ${resets.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);width:100%">${resets}</div>`:''}
+      ${excBtns?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;width:100%">${excBtns}</div>`:''}
     </div>`;
   }).join('');
 }
+
+window.addException=async function(name,ph){
+  const curr=exceptions[name]||[];
+  if(curr.includes(ph))return;
+  const updated=[...curr,ph];
+  try{
+    await setDoc(doc(db,'exceptions',name),{phases:updated});
+    toast(`🔓 ${esc(name)} puede editar ${PHASE_LABELS[ph]}`);
+  }catch(e){toast('Error',true);}
+};
+
+window.removeException=async function(name,ph){
+  const curr=exceptions[name]||[];
+  const updated=curr.filter(p=>p!==ph);
+  try{
+    if(updated.length===0){
+      await deleteDoc(doc(db,'exceptions',name));
+    }else{
+      await setDoc(doc(db,'exceptions',name),{phases:updated});
+    }
+    toast(`🔒 Acceso de ${esc(name)} a ${PHASE_LABELS[ph]} removido`);
+  }catch(e){toast('Error',true);}
+};
 
 // Poblar datalist de países
 const dl=document.getElementById('paises-list');
