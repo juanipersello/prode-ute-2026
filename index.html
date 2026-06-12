@@ -510,27 +510,31 @@ const PHASE_LABELS = {
 const ELIM_PHASES = ['Dieciseisavos','Octavos','Cuartos','Semifinal','Tercero','Final'];
 
 const PAISES = [
+  // Anfitriones
+  {name:'Estados Unidos',flag:'🇺🇸'},{name:'Canadá',flag:'🇨🇦'},{name:'México',flag:'🇲🇽'},
+  // Conmebol
   {name:'Argentina',flag:'🇦🇷'},{name:'Brasil',flag:'🇧🇷'},{name:'Uruguay',flag:'🇺🇾'},
   {name:'Colombia',flag:'🇨🇴'},{name:'Ecuador',flag:'🇪🇨'},{name:'Paraguay',flag:'🇵🇾'},
-  {name:'Bolivia',flag:'🇧🇴'},{name:'Venezuela',flag:'🇻🇪'},{name:'Chile',flag:'🇨🇱'},
-  {name:'Perú',flag:'🇵🇪'},{name:'México',flag:'🇲🇽'},{name:'Estados Unidos',flag:'🇺🇸'},
-  {name:'Canadá',flag:'🇨🇦'},{name:'Costa Rica',flag:'🇨🇷'},{name:'Honduras',flag:'🇭🇳'},
-  {name:'El Salvador',flag:'🇸🇻'},{name:'Panamá',flag:'🇵🇦'},{name:'Jamaica',flag:'🇯🇲'},
-  {name:'Trinidad y Tobago',flag:'🇹🇹'},{name:'Cuba',flag:'🇨🇺'},
-  {name:'Francia',flag:'🇫🇷'},{name:'España',flag:'🇪🇸'},{name:'Alemania',flag:'🇩🇪'},
-  {name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{name:'Portugal',flag:'🇵🇹'},{name:'Holanda',flag:'🇳🇱'},
-  {name:'Bélgica',flag:'🇧🇪'},{name:'Italia',flag:'🇮🇹'},{name:'Croacia',flag:'🇭🇷'},
-  {name:'Serbia',flag:'🇷🇸'},{name:'Suiza',flag:'🇨🇭'},{name:'Austria',flag:'🇦🇹'},
-  {name:'Turquía',flag:'🇹🇷'},{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{name:'Dinamarca',flag:'🇩🇰'},
-  {name:'Polonia',flag:'🇵🇱'},{name:'Hungría',flag:'🇭🇺'},{name:'Eslovaquia',flag:'🇸🇰'},
-  {name:'Ucrania',flag:'🇺🇦'},{name:'Grecia',flag:'🇬🇷'},{name:'Albania',flag:'🇦🇱'},
-  {name:'Japón',flag:'🇯🇵'},{name:'Corea del Sur',flag:'🇰🇷'},{name:'Arabia Saudita',flag:'🇸🇦'},
-  {name:'Australia',flag:'🇦🇺'},{name:'Irán',flag:'🇮🇷'},{name:'Qatar',flag:'🇶🇦'},
-  {name:'Uzbekistán',flag:'🇺🇿'},{name:'Jordania',flag:'🇯🇴'},
-  {name:'Marruecos',flag:'🇲🇦'},{name:'Senegal',flag:'🇸🇳'},{name:'Nigeria',flag:'🇳🇬'},
-  {name:'Costa de Marfil',flag:'🇨🇮'},{name:'Camerún',flag:'🇨🇲'},{name:'Mali',flag:'🇲🇱'},
-  {name:'Sudáfrica',flag:'🇿🇦'},{name:'Kenia',flag:'🇰🇪'},{name:'Túnez',flag:'🇹🇳'},
-  {name:'Egipto',flag:'🇪🇬'},{name:'Ghana',flag:'🇬🇭'}
+  // UEFA
+  {name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{name:'Francia',flag:'🇫🇷'},{name:'Croacia',flag:'🇭🇷'},
+  {name:'Portugal',flag:'🇵🇹'},{name:'Alemania',flag:'🇩🇪'},{name:'Países Bajos',flag:'🇳🇱'},
+  {name:'Bélgica',flag:'🇧🇪'},{name:'Austria',flag:'🇦🇹'},{name:'España',flag:'🇪🇸'},
+  {name:'Suiza',flag:'🇨🇭'},{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{name:'Bosnia y Herzegovina',flag:'🇧🇦'},
+  {name:'Suecia',flag:'🇸🇪'},{name:'Turquía',flag:'🇹🇷'},{name:'República Checa',flag:'🇨🇿'},
+  {name:'Noruega',flag:'🇳🇴'},
+  // CAF
+  {name:'Marruecos',flag:'🇲🇦'},{name:'Túnez',flag:'🇹🇳'},{name:'Egipto',flag:'🇪🇬'},
+  {name:'Argelia',flag:'🇩🇿'},{name:'Ghana',flag:'🇬🇭'},{name:'Cabo Verde',flag:'🇨🇻'},
+  {name:'Sudáfrica',flag:'🇿🇦'},{name:'Costa de Marfil',flag:'🇨🇮'},
+  {name:'Senegal',flag:'🇸🇳'},{name:'RD Congo',flag:'🇨🇩'},
+  // AFC
+  {name:'Japón',flag:'🇯🇵'},{name:'Nueva Zelanda',flag:'🇳🇿'},{name:'Irán',flag:'🇮🇷'},
+  {name:'Uzbekistán',flag:'🇺🇿'},{name:'Corea del Sur',flag:'🇰🇷'},{name:'Jordania',flag:'🇯🇴'},
+  {name:'Australia',flag:'🇦🇺'},{name:'Qatar',flag:'🇶🇦'},{name:'Arabia Saudita',flag:'🇸🇦'},
+  // Concacaf
+  {name:'Panamá',flag:'🇵🇦'},{name:'Haití',flag:'🇭🇹'},{name:'Curazao',flag:'🇨🇼'},
+  // Repechaje
+  {name:'Irak',flag:'🇮🇶'}
 ].sort((a,b)=>a.name.localeCompare(b.name));
 
 let matches=[], predictions={}, results={}, lockedPhases={}, pins={}, exceptions={};
@@ -888,6 +892,14 @@ window.savePhase=async function(ph){
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!th)return;
       const thv=th.value.trim(),tav=ta.value.trim(),hv=h?.value.trim()||'',av=a?.value.trim()||'';
+      // Validar que los equipos existan en la lista
+      const paisesNombres=PAISES.map(p=>p.name.toLowerCase());
+      if(thv&&!paisesNombres.includes(thv.toLowerCase())){
+        toast(`"${thv}" no es un país válido. Elegí de la lista.`,true);return;
+      }
+      if(tav&&!paisesNombres.includes(tav.toLowerCase())){
+        toast(`"${tav}" no es un país válido. Elegí de la lista.`,true);return;
+      }
       if(thv||tav||hv||av){
         up[m.id]={teamH:thv,teamA:tav,h:hv!==''?parseInt(hv):null,a:av!==''?parseInt(av):null};
         count++;
