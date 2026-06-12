@@ -420,7 +420,7 @@
             </div>
             <!-- ELIMINATORIA (Octavos en adelante) -->
             <div id="form-elim" style="display:none">
-              <div class="match-form-2" style="margin-bottom:10px">
+              <div class="match-form-3" style="margin-bottom:10px">
                 <div class="form-field" style="margin:0">
                   <label>Fase</label>
                   <select id="elim-phase">
@@ -434,6 +434,10 @@
                 <div class="form-field" style="margin:0">
                   <label>Fecha del partido</label>
                   <input type="date" id="elim-date">
+                </div>
+                <div class="form-field" style="margin:0">
+                  <label>Hora (opcional)</label>
+                  <input type="time" id="elim-time" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:11px 14px;color:white;font-family:'Barlow',sans-serif;font-size:14px;outline:none;width:100%;color-scheme:dark">
                 </div>
               </div>
               <div class="form-field" style="margin:0">
@@ -1259,10 +1263,12 @@ window.addMatch=async function(){
       const phase=document.getElementById('elim-phase').value;
       const label=document.getElementById('elim-label').value.trim();
       const date=document.getElementById('elim-date').value;
+      const time=document.getElementById('elim-time').value;
       if(!label){toast('Ingresá una etiqueta para el cruce',true);return;}
-      await setDoc(doc(db,'matches',id),{phase,label,date,isElim:true,createdAt:Date.now()});
+      await setDoc(doc(db,'matches',id),{phase,label,date,time,isElim:true,createdAt:Date.now()});
       document.getElementById('elim-label').value='';
       document.getElementById('elim-date').value='';
+      document.getElementById('elim-time').value='';
     }
     toast('✔ Partido agregado');
   }catch(e){toast('Error al guardar',true);}
@@ -1535,11 +1541,21 @@ function updateTodayMatches(){
 }
 
 function updateCountdown(){
-  // Buscar próximo partido con fecha futura
-  const today=todayStr();
+  const now=new Date();
+  // Filtrar partidos que aún no arrancaron (fecha+hora > ahora)
+  // Para partidos sin hora asignada se usa 23:59 para que no los saltee antes de tiempo
   const upcoming=matches
-    .filter(m=>m.date&&m.date>=today)
-    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+    .filter(m=>{
+      if(!m.date)return false;
+      const timeStr=m.time||'23:59';
+      const matchTime=new Date(`${m.date}T${timeStr}:00-03:00`);
+      return matchTime>now;
+    })
+    .sort((a,b)=>{
+      const ta=new Date(`${a.date}T${a.time||'23:59'}:00-03:00`);
+      const tb=new Date(`${b.date}T${b.time||'23:59'}:00-03:00`);
+      return ta-tb;
+    });
   const lbl=document.getElementById('header-countdown-label');
   if(!upcoming.length){
     document.getElementById('cd-d').textContent='--';
@@ -1550,18 +1566,17 @@ function updateCountdown(){
     return;
   }
   const next=upcoming[0];
-  const timeStr=next.time||'00:00';
-  const target=new Date(`${next.date}T${timeStr}:00-03:00`); // Argentina UTC-3
+  const timeStr=next.time||'23:59';
+  const target=new Date(`${next.date}T${timeStr}:00-03:00`);
   const name=next.home?`${next.home} vs ${next.away}`:(next.label||'Próximo partido');
   if(lbl)lbl.textContent=name.length>22?name.slice(0,20)+'…':name;
 
   function tick(){
     const diff=target-new Date();
     if(diff<=0){
-      document.getElementById('cd-d').textContent='00';
-      document.getElementById('cd-h').textContent='00';
-      document.getElementById('cd-m').textContent='00';
-      document.getElementById('cd-s').textContent='00';
+      // Partido arrancó, recalcular para el siguiente
+      clearInterval(window._countdownInterval);
+      updateCountdown();
       return;
     }
     const dd=Math.floor(diff/86400000);
