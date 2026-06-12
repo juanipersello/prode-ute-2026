@@ -261,6 +261,12 @@
       <div class="header-info-value" id="header-today-content" style="color:rgba(255,255,255,.3);font-size:12px">Cargando...</div>
     </div>
     <div class="header-divider"></div>
+    <!-- Dato del día -->
+    <div class="header-info-block" id="header-dato" style="flex:2;max-width:340px">
+      <div class="header-info-label">💡 Dato del día</div>
+      <div id="header-dato-value" style="font-family:'Barlow',sans-serif;font-size:12px;color:rgba(255,255,255,.85);line-height:1.4;text-align:center"></div>
+    </div>
+    <div class="header-divider"></div>
     <!-- Countdown -->
     <div class="header-info-block" id="header-countdown-block">
       <div class="header-info-label" id="header-countdown-label">Próximo partido</div>
@@ -1450,10 +1456,43 @@ window.removeException=async function(name,ph){
 };
 
 // ── HEADER INFO ──
+const DATOS_CURIOSOS = [
+  "El árbitro cobra 500 dólares por partido. El jugador que insulta paga más en multas.",
+  "En Qatar 2022 se vendieron 3 millones de entradas. El 40% las compraron personas que nunca habían visto fútbol en vivo.",
+  "El camerunés Samuel Eto'o fue vendido a los 11 años por una botella de vino y una cabra.",
+  "Hay un jugador profesional en activo que se llama Bum Chul Chang.",
+  "La selección de Samoa Americana perdió 31-0 contra Australia en 2001. El arquero era dentista y volvió al consultorio al día siguiente.",
+  "Craig Gordon, el arquero de Escocia, tiene 43 años. Es el jugador más viejo del Mundial 2026.",
+  "Gilberto Mora de México tiene 17 años. Cuando nació, Messi ya había ganado su primer Balón de Oro.",
+  "25 de los 26 jugadores de Curazao nacieron en Países Bajos. Básicamente es Holanda con otra camiseta.",
+  "El DT de Curazao, Dick Advocaat, tiene 78 años. Hay 40 años de diferencia con el DT más joven del torneo.",
+  "292 jugadores del torneo juegan para una selección de un país distinto al que nacieron.",
+  "Curazao tiene 185.000 habitantes. Hay barrios de Buenos Aires con más gente.",
+  "El fútbol se juega sobre césped.",
+  "Los jugadores pueden ser diestros o zurdos, e incluso algunos usan los dos pies.",
+  "Lionel Messi es zurdo.",
+  "Cristiano Ronaldo no es zurdo.",
+  "Los arqueros generalmente usan guantes.",
+  "El árbitro usa ropa diferente a la de los jugadores para que se note quién es.",
+  "La pelota es redonda.",
+  "Brasil juega de amarillo, salvo cuando juega de azul.",
+  "En un partido de fútbol hay 22 jugadores en la cancha, 11 de cada lado.",
+];
+
+function getDatoDia(){
+  return DATOS_CURIOSOS[Math.floor(Math.random()*DATOS_CURIOSOS.length)];
+}
+
 function updateHeaderInfo(){
   updateTodayMatches();
   updateCountdown();
   updateChampion();
+  updateDatoDia();
+}
+
+function updateDatoDia(){
+  const el=document.getElementById('header-dato-value');
+  if(el)el.textContent=getDatoDia();
 }
 
 function todayStr(){
