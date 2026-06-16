@@ -1168,6 +1168,31 @@ function calcScore(name){
   return{pts,exact,winner,teamsOk,total,racha,pct};
 }
 
+// Calcula puntos que un usuario sumó en partidos de una fecha específica
+function calcScoreDia(name, dateStr){
+  const up=predictions[name]||{};
+  let pts=0;
+  matches.filter(m=>m.date===dateStr).forEach(m=>{
+    const res=results[m.id],pred=up[m.id];
+    if(!res||!pred)return;
+    if(m.phase==='Dieciseisavos'||!isElim(m.phase)){
+      const ph=parseInt(pred.h),pa=parseInt(pred.a);
+      if(isNaN(ph)||isNaN(pa))return;
+      if(ph===res.h&&pa===res.a)pts+=3;
+      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps)pts+=1;}
+    }else{
+      const predH=norm(pred.teamH),predA=norm(pred.teamA);
+      const resH=norm(res.teamH),resA=norm(res.teamA);
+      const ok=(predH===resH&&predA===resA)||(predH===resA&&predA===resH);
+      if(!ok||pred.h===null||pred.a===null)return;
+      const ph=parseInt(pred.h),pa=parseInt(pred.a);
+      if(ph===res.h&&pa===res.a)pts+=4;
+      else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps)pts+=2;else pts+=1;}
+    }
+  });
+  return pts;
+}
+
 function renderScores(){
   const names=Object.keys(predictions).filter(n=>!n.startsWith('__'));
   const c=document.getElementById('scores-content');
@@ -1175,14 +1200,37 @@ function renderScores(){
   if(names.length===0){c.innerHTML='<div class="empty-state"><div class="icon">🏆</div><p>Nadie cargó predicciones todavía.</p></div>';return;}
   const rows=names.map(n=>({name:n,sector:sectors[n]||'',...calcScore(n)})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
 
-  // Tab activo
   const activeTab=window._scoresTab||'general';
-
   function tabBtn(id,label){
     return `<button class="scores-tab${activeTab===id?' active':''}" onclick="switchScoresTab('${id}')">${label}</button>`;
   }
 
-  // Tabla general
+  // Ganador del día
+  function renderGanadorDia(){
+    const today=todayStr();
+    const todayMatches=matches.filter(m=>m.date===today&&results[m.id]);
+    if(!todayMatches.length)return'';
+    const diaRows=names.map(n=>({name:n,pts:calcScoreDia(n,today)})).filter(r=>r.pts>0).sort((a,b)=>b.pts-a.pts);
+    if(!diaRows.length)return'';
+    const ganador=diaRows[0];
+    const empates=diaRows.filter(r=>r.pts===ganador.pts);
+    const esEmpate=empates.length>1;
+    return`<div style="background:linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.05));border:1px solid rgba(212,160,23,.3);border-radius:var(--radio);padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:32px">🏅</div>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(212,160,23,.7);margin-bottom:4px">Ganador del día · ${fmtDate(today)}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:var(--dorado-claro)">
+          ${esEmpate?empates.map(r=>esc(r.name)).join(' · '):esc(ganador.name)}
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:3px">${ganador.pts} punto${ganador.pts!==1?'s':''} sumado${ganador.pts!==1?'s':''} hoy${esEmpate?' (empate)':''}</div>
+      </div>
+      ${diaRows.length>1?`<div style="margin-left:auto;font-size:12px;color:rgba(255,255,255,.3)">
+        ${diaRows.slice(0,5).map((r,i)=>`<div>${i+1}. ${esc(r.name)} — ${r.pts}pts</div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }
+
+  // Tabla individual
   function renderTable(data,showSector=false){
     return`<div class="scores-table-wrap"><table class="scores-table">
       <thead><tr><th>#</th><th>Participante</th>${showSector?'<th>Sector</th>':''}<th>Pts</th><th>Exactos</th><th>Aciertos</th><th>%</th><th>Racha</th><th>Partidos</th></tr></thead>
@@ -1191,8 +1239,7 @@ function renderScores(){
         <td style="font-weight:600">${esc(r.name)}</td>
         ${showSector?`<td style="font-size:12px;color:rgba(255,255,255,.5)">${esc(r.sector||'–')}</td>`:''}
         <td><span class="pts-badge">${r.pts}</span></td>
-        <td>${r.exact}</td>
-        <td>${r.winner}</td>
+        <td>${r.exact}</td><td>${r.winner}</td>
         <td style="font-size:13px">${r.pct}%</td>
         <td>${r.racha>0?`<span class="racha-badge">🔥${r.racha}</span>`:'–'}</td>
         <td>${r.total}</td>
@@ -1200,26 +1247,95 @@ function renderScores(){
     </table></div>`;
   }
 
-  // Ranking por sectores
+  // Ranking por sectores con suma y promedio
   function renderSectores(){
     if(!sectorsList.length)return'<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">No hay sectores definidos aún. Creálos desde el panel Admin.</div>';
-    const sinSector=rows.filter(r=>!r.sector);
-    let html='';
-    sectorsList.forEach(sec=>{
+    // Ranking global de sectores
+    const secStats=sectorsList.map(sec=>{
       const miembros=rows.filter(r=>r.sector===sec);
-      if(!miembros.length)return;
+      if(!miembros.length)return null;
+      const suma=miembros.reduce((a,r)=>a+r.pts,0);
+      const prom=miembros.length?Math.round(suma/miembros.length*10)/10:0;
+      return{sec,miembros,suma,prom};
+    }).filter(Boolean).sort((a,b)=>b.prom-a.prom);
+
+    let html=`<div style="background:var(--gris-medio);border-radius:var(--radio);padding:16px 18px;margin-bottom:22px;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:12px">🏆 Ranking de Sectores</div>
+      <table class="scores-table">
+        <thead><tr><th>#</th><th>Sector</th><th>Integrantes</th><th>Suma</th><th>Promedio</th></tr></thead>
+        <tbody>${secStats.map((s,i)=>`<tr>
+          <td><span class="rank-badge rank-${i<3?i+1:'other'}">${i+1}</span></td>
+          <td style="font-weight:600">🏢 ${esc(s.sec)}</td>
+          <td>${s.miembros.length}</td>
+          <td><span class="pts-badge" style="font-size:16px">${s.suma}</span></td>
+          <td style="font-size:14px;color:rgba(255,255,255,.7)">${s.prom}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+    // Detalle por sector
+    secStats.forEach(s=>{
       html+=`<div class="sector-ranking">
-        <div class="sector-ranking-title">🏢 ${esc(sec)}</div>
-        ${renderTable(miembros,false)}
+        <div class="sector-ranking-title">🏢 ${esc(s.sec)} · Suma: ${s.suma}pts · Prom: ${s.prom}pts</div>
+        ${renderTable(s.miembros,false)}
       </div>`;
     });
+
+    const sinSector=rows.filter(r=>!r.sector);
     if(sinSector.length){
       html+=`<div class="sector-ranking">
         <div class="sector-ranking-title" style="color:rgba(255,255,255,.3)">Sin sector asignado</div>
         ${renderTable(sinSector,false)}
       </div>`;
     }
-    return html||'<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">Ningún participante tiene sector asignado.</div>';
+    return html;
+  }
+
+  // Estadísticas
+  function renderStats(){
+    const maxPct=Math.max(...rows.map(r=>r.pct),1);
+    const maxRacha=Math.max(...rows.map(r=>r.racha),1);
+
+    // Stats por sector
+    let sectorStats='';
+    if(sectorsList.length){
+      sectorStats=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin:16px 0 8px">% promedio por sector</div>
+      <div style="display:grid;gap:8px">
+      ${sectorsList.map(sec=>{
+        const miembros=rows.filter(r=>r.sector===sec);
+        if(!miembros.length)return'';
+        const promPct=Math.round(miembros.reduce((a,r)=>a+r.pct,0)/miembros.length);
+        const promRacha=Math.round(miembros.reduce((a,r)=>a+r.racha,0)/miembros.length*10)/10;
+        return`<div style="background:var(--gris-medio);border-radius:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px">🏢 ${esc(sec)}</span>
+            <span style="font-size:13px;color:rgba(255,255,255,.5)">${promPct}% acierto · 🔥${promRacha} racha prom.</span>
+          </div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:${promPct}%"></div></div>
+        </div>`;
+      }).join('')}
+      </div>`;
+    }
+
+    return`<div style="display:grid;gap:10px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">% de aciertos individuales</div>
+      ${rows.map(r=>`<div style="background:var(--gris-medio);border-radius:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px">${esc(r.name)}</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:var(--dorado)">${r.pct}%</span>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${r.total>0?r.pct/maxPct*100:0}%"></div></div>
+      </div>`).join('')}
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin:12px 0 4px">Racha actual de aciertos</div>
+      ${[...rows].sort((a,b)=>b.racha-a.racha).map(r=>`<div style="background:var(--gris-medio);border-radius:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px">${esc(r.name)}</span>
+          <span class="racha-badge">${r.racha>0?'🔥'+r.racha+' seguidos':'–'}</span>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill green" style="width:${maxRacha>0?r.racha/maxRacha*100:0}%"></div></div>
+      </div>`).join('')}
+      ${sectorStats}
+    </div>`;
   }
 
   const legend=`<div style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px">
@@ -1235,31 +1351,11 @@ function renderScores(){
 
   let content='';
   if(activeTab==='general'){
-    content=renderTable(rows,true)+legend;
+    content=renderGanadorDia()+renderTable(rows,true)+legend;
   }else if(activeTab==='sectores'){
-    content=renderSectores()+legend;
+    content=renderGanadorDia()+renderSectores()+legend;
   }else{
-    // Stats
-    const maxPct=Math.max(...rows.map(r=>r.pct),1);
-    const maxRacha=Math.max(...rows.map(r=>r.racha),1);
-    content=`<div style="display:grid;gap:10px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">% de aciertos (ganador correcto o exacto)</div>
-      ${rows.map(r=>`<div style="background:var(--gris-medio);border-radius:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px">${esc(r.name)}</span>
-          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:var(--dorado)">${r.pct}%</span>
-        </div>
-        <div class="stat-bar"><div class="stat-bar-fill" style="width:${r.total>0?r.pct/maxPct*100:0}%"></div></div>
-      </div>`).join('')}
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin:12px 0 4px">Racha actual de aciertos consecutivos</div>
-      ${rows.sort((a,b)=>b.racha-a.racha).map(r=>`<div style="background:var(--gris-medio);border-radius:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.06)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px">${esc(r.name)}</span>
-          <span class="racha-badge">${r.racha>0?'🔥'+r.racha+' seguidos':'–'}</span>
-        </div>
-        <div class="stat-bar"><div class="stat-bar-fill green" style="width:${maxRacha>0?r.racha/maxRacha*100:0}%"></div></div>
-      </div>`).join('')}
-    </div>`;
+    content=renderGanadorDia()+renderStats();
   }
 
   c.innerHTML=tabs+content;
