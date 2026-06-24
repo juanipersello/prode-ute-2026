@@ -140,6 +140,10 @@
   .prediction-pts{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:var(--dorado);white-space:nowrap}
   .prediction-body{padding:0 18px 14px;display:none}.prediction-body.open{display:block}
   .pred-phase-header{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dorado);padding:11px 0 5px;border-bottom:1px solid rgba(212,160,23,.2);margin-bottom:5px}
+  .view-phase-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 0 10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
+  .view-phase-tab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s}
+  .view-phase-tab.active{background:var(--dorado);color:var(--gris-oscuro);border-color:var(--dorado)}
+  .view-phase-content{display:grid;gap:0}
   .pred-match-row{display:grid;grid-template-columns:1fr 86px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;gap:8px}
   .pred-match-row:last-child{border-bottom:none}
   .pred-team-home{text-align:right;font-weight:500}.pred-team-away{text-align:left;font-weight:500}
@@ -1392,71 +1396,85 @@ function renderView(){
 function renderUserBody(name){
   if(matches.length===0)return'<p style="color:rgba(255,255,255,.3);font-size:14px">Sin partidos aún.</p>';
   const up=predictions[name]||{};
-  let html='';
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-  phases.forEach(ph=>{
-    html+=`<div class="pred-phase-header">${PHASE_LABELS[ph]||ph}</div>`;
-    matches.filter(m=>m.phase===ph).forEach(m=>{
-      const pred=up[m.id],res=results[m.id];
-      if(ph==='Dieciseisavos'){
-        // 16avos: muestra como grupos
-        let cls='pending',score='–';
-        if(pred&&pred.h!==undefined&&pred.h!==null){
-          score=`${pred.h} - ${pred.a}`;
-          if(res){
-            const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
-            if(ph2===res.h&&pa2===res.a)cls='exact';
-            else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);cls=rs===ps?'winner':'wrong';}
-          }
+  if(!phases.length)return'<p style="color:rgba(255,255,255,.3);font-size:14px">Sin partidos aún.</p>';
+
+  window._viewPhaseTab=window._viewPhaseTab||{};
+  const activePhase=window._viewPhaseTab[name]||phases[0];
+
+  const tabs=`<div class="view-phase-tabs">${phases.map(ph=>
+    `<button class="view-phase-tab${ph===activePhase?' active':''}" onclick="switchViewPhase('${esc(name)}','${ph}')">${PHASE_LABELS[ph]||ph}</button>`
+  ).join('')}</div>`;
+
+  let html='';
+  matches.filter(m=>m.phase===activePhase).forEach(m=>{
+    const pred=up[m.id],res=results[m.id];
+    if(activePhase==='Dieciseisavos'){
+      let cls='pending',score='–';
+      if(pred&&pred.h!==undefined&&pred.h!==null){
+        score=`${pred.h} - ${pred.a}`;
+        if(res){
+          const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
+          if(ph2===res.h&&pa2===res.a)cls='exact';
+          else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);cls=rs===ps?'winner':'wrong';}
         }
-        html+=`<div class="pred-match-row">
-          <div class="pred-team-home">${esc(m.home||m.label||'Local')}</div>
-          <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
-          <div class="pred-team-away">${esc(m.away||'Visitante')}</div>
-        </div>`;
-      }else if(isElim(ph)){
-        if(!pred||(!pred.teamH&&!pred.teamA)){
-          html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.25)">Sin predicción</div></div>`;
-          return;
-        }
-        const predH=norm(pred.teamH),predA=norm(pred.teamA);
-        const resH=res?norm(res.teamH):'',resA=res?norm(res.teamA):'';
-        const ok=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
-        let cls='pending',pts='';
-        if(res&&ok){
-          const ph=parseInt(pred.h),pa=parseInt(pred.a);
-          if(ph===res.h&&pa===res.a){cls='exact';pts=' +4pts';}
-          else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){cls='winner';pts=' +2pts';}else{cls='wrong';pts=' +1pt';}}
-        }else if(res&&!ok)cls='wrong';
-        html+=`<div class="pred-elim-row">
-          <div class="pred-elim-label">${esc(m.label||'Cruce')}</div>
-          <div class="pred-elim-content pred-score ${cls}">${esc(pred.teamH||'?')} ${pred.h??'?'} - ${pred.a??'?'} ${esc(pred.teamA||'?')}${pts}</div>
-        </div>`;
-      }else{
-        let cls='pending',score='–';
-        if(pred&&pred.h!==undefined){
-          score=`${pred.h} - ${pred.a}`;
-          if(res){
-            if(pred.h===res.h&&pred.a===res.a)cls='exact';
-            else{const rs=Math.sign(res.h-res.a),ps=Math.sign(pred.h-pred.a);cls=rs===ps?'winner':'wrong';}
-          }
-        }
-        html+=`<div class="pred-match-row">
-          <div class="pred-team-home">${esc(m.home)}</div>
-          <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
-          <div class="pred-team-away">${esc(m.away)}</div>
-        </div>`;
       }
-    });
+      html+=`<div class="pred-match-row">
+        <div class="pred-team-home">${esc(m.home||m.label||'Local')}</div>
+        <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
+        <div class="pred-team-away">${esc(m.away||'Visitante')}</div>
+      </div>`;
+    }else if(isElim(activePhase)){
+      if(!pred||(!pred.teamH&&!pred.teamA)){
+        html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.25)">Sin predicción</div></div>`;
+        return;
+      }
+      const predH=norm(pred.teamH),predA=norm(pred.teamA);
+      const resH=res?norm(res.teamH):'',resA=res?norm(res.teamA):'';
+      const ok=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
+      let cls='pending',pts='';
+      if(res&&ok){
+        const ph=parseInt(pred.h),pa=parseInt(pred.a);
+        if(ph===res.h&&pa===res.a){cls='exact';pts=' +4pts';}
+        else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){cls='winner';pts=' +2pts';}else{cls='wrong';pts=' +1pt';}}
+      }else if(res&&!ok)cls='wrong';
+      html+=`<div class="pred-elim-row">
+        <div class="pred-elim-label">${esc(m.label||'Cruce')}</div>
+        <div class="pred-elim-content pred-score ${cls}">${esc(pred.teamH||'?')} ${pred.h??'?'} - ${pred.a??'?'} ${esc(pred.teamA||'?')}${pts}</div>
+      </div>`;
+    }else{
+      let cls='pending',score='–';
+      if(pred&&pred.h!==undefined){
+        score=`${pred.h} - ${pred.a}`;
+        if(res){
+          if(pred.h===res.h&&pred.a===res.a)cls='exact';
+          else{const rs=Math.sign(res.h-res.a),ps=Math.sign(pred.h-pred.a);cls=rs===ps?'winner':'wrong';}
+        }
+      }
+      html+=`<div class="pred-match-row">
+        <div class="pred-team-home">${esc(m.home)}</div>
+        <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
+        <div class="pred-team-away">${esc(m.away)}</div>
+      </div>`;
+    }
   });
-  return html;
+
+  return tabs+`<div class="view-phase-content">${html}</div>`;
 }
+
+window.switchViewPhase=function(name,ph){
+  window._viewPhaseTab=window._viewPhaseTab||{};
+  window._viewPhaseTab[name]=ph;
+  const body=document.getElementById('body-'+name);
+  if(body)body.innerHTML=renderUserBody(name);
+};
 
 window.toggleCard=function(name){
   const b=document.getElementById('body-'+name),t=document.getElementById('tog-'+name);
   if(!b)return; const open=b.classList.toggle('open');
   if(t)t.textContent=open?'▲':'▼';
 };
+
 
 // ── ADMIN ──
 window.adminLogin=function(){
