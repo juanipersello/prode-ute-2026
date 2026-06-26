@@ -775,9 +775,27 @@ function renderPredictContent(){
     return;
   }
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-  // Fases + tablas simuladas al final
-  c.innerHTML = phases.map(ph=>renderPhaseBlock(ph)).join('') + renderGroupTables(currentUser);
+
+  // Por defecto mostrar la última fase con partidos (la más nueva agregada)
+  if(window._predictPhaseTab===undefined||!phases.includes(window._predictPhaseTab)){
+    window._predictPhaseTab=phases[phases.length-1];
+  }
+  const activePhase=window._predictPhaseTab;
+
+  const tabs=`<div class="view-phase-tabs" style="margin-bottom:18px">${phases.map(ph=>{
+    const locked=isLocked(ph);
+    const saved=getPhaseSaved(ph);
+    const icon=locked?'🔒':saved?'✔':'✏';
+    return `<button class="view-phase-tab${ph===activePhase?' active':''}" onclick="switchPredictPhase('${ph}')">${icon} ${PHASE_LABELS[ph]}</button>`;
+  }).join('')}</div>`;
+
+  c.innerHTML = tabs + renderPhaseBlock(activePhase) + renderGroupTables(currentUser);
 }
+
+window.switchPredictPhase=function(ph){
+  window._predictPhaseTab=ph;
+  renderPredictContent();
+};
 
 function renderPhaseBlock(ph){
   const locked=isLocked(ph);
@@ -1662,7 +1680,18 @@ function renderAdminMatches(){
   if(!c)return;
   if(matches.length===0){c.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:14px;padding:16px 0">No hay partidos cargados.</div>';return;}
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
-  c.innerHTML=phases.map(ph=>{
+
+  if(window._adminPhaseTab===undefined||!phases.includes(window._adminPhaseTab)){
+    window._adminPhaseTab=phases[phases.length-1];
+  }
+  const activePhase=window._adminPhaseTab;
+
+  const tabs=`<div class="view-phase-tabs" style="margin-bottom:14px">${phases.map(ph=>{
+    const locked=isLocked(ph);
+    return `<button class="view-phase-tab${ph===activePhase?' active':''}" onclick="switchAdminPhase('${ph}')">${locked?'🔒':'✏'} ${PHASE_LABELS[ph]}</button>`;
+  }).join('')}</div>`;
+
+  const blocksHtml=[activePhase].map(ph=>{
     const locked=isLocked(ph);
     const lockBtn=locked
       ?`<button class="btn btn-secondary btn-sm" onclick="toggleLockPhase('${ph}')">🔓 Reabrir fase</button>`
@@ -1710,7 +1739,14 @@ function renderAdminMatches(){
       <div class="phase-admin-matches">${mHtml}</div>
     </div>`;
   }).join('');
+
+  c.innerHTML = tabs + blocksHtml;
 }
+
+window.switchAdminPhase=function(ph){
+  window._adminPhaseTab=ph;
+  renderAdminMatches();
+};
 
 function renderAdminSectors(){
   const c=document.getElementById('admin-sectors-list');
