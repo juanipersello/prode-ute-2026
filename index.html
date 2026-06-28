@@ -144,6 +144,39 @@
   .view-phase-tab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s}
   .view-phase-tab.active{background:var(--dorado);color:var(--gris-oscuro);border-color:var(--dorado)}
   .view-phase-content{display:grid;gap:0}
+
+  /* BRACKET */
+  .bracket-wrap{overflow-x:auto;padding-bottom:10px}
+  .bracket-cols{display:flex;gap:28px;min-width:max-content;padding:8px 4px}
+  .bracket-col{display:flex;flex-direction:column;justify-content:space-around;gap:18px;min-width:220px}
+  .bracket-col-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);text-align:center;margin-bottom:6px}
+  .bracket-slot{display:flex;flex-direction:column;justify-content:center;flex:1}
+  .bracket-card{background:var(--gris-medio);border-radius:8px;border:1px solid rgba(255,255,255,.1);overflow:hidden;position:relative}
+  .bracket-card.has-result{border-color:rgba(0,154,68,.3)}
+  .bracket-team-row{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .bracket-team-row:last-child{border-bottom:none}
+  .bracket-team-row.winner{background:rgba(0,154,68,.08)}
+  .bracket-team-fixed{flex:1;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12.5px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bracket-team-input-wrap{flex:1;position:relative;min-width:0}
+  .bracket-team-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:5px 7px;color:white;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11.5px;outline:none}
+  .bracket-team-input:focus{border-color:var(--dorado)}
+  .bracket-team-input:disabled{opacity:.5}
+  .bracket-team-input::placeholder{color:rgba(255,255,255,.25);font-weight:400;font-size:10px}
+  .bracket-score-input{width:30px;height:26px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:white;outline:none;flex-shrink:0}
+  .bracket-score-input:disabled{opacity:.5}
+  .bracket-score-fixed{width:24px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;color:var(--dorado-claro);flex-shrink:0}
+  .bracket-label{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);text-align:center;padding:3px 0 5px;border-top:1px dashed rgba(255,255,255,.08)}
+  .bracket-real{font-size:9.5px;color:#4dcd7f;text-align:center;padding:3px 6px;background:rgba(0,154,68,.08);font-family:'Barlow Condensed',sans-serif;font-weight:700}
+  .bracket-pts{font-size:9.5px;text-align:center;padding:3px 6px;font-family:'Barlow Condensed',sans-serif;font-weight:700}
+  .bracket-connector{position:absolute;right:-28px;top:50%;width:28px;height:2px;background:rgba(255,255,255,.1)}
+  .bracket-save-bar{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+  .ac-drop-bracket{position:absolute;top:100%;left:0;right:0;background:#1e2040;border:1px solid rgba(212,160,23,.4);border-radius:0 0 6px 6px;z-index:200;max-height:140px;overflow-y:auto;display:none}
+  .ac-drop-bracket.open{display:block}
+  .ac-drop-bracket .autocomplete-item{font-size:12px;padding:7px 10px}
+  @media(max-width:700px){
+    .bracket-col{min-width:170px}
+    .bracket-team-fixed,.bracket-team-input{font-size:11px}
+  }
   .pred-match-row{display:grid;grid-template-columns:1fr 86px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;gap:8px}
   .pred-match-row:last-child{border-bottom:none}
   .pred-team-home{text-align:right;font-weight:500}.pred-team-away{text-align:left;font-weight:500}
@@ -797,6 +830,103 @@ window.switchPredictPhase=function(ph){
   renderPredictContent();
 };
 
+// ── BRACKET (16avos en adelante) ──
+// mode: 'predict' (usuario completa), 'admin' (admin carga resultado), 'view' (solo lectura de un usuario)
+function renderBracket(ph, mode, userName, disabledAttr){
+  const phMatches=matches.filter(m=>m.phase===ph);
+  if(!phMatches.length)return'<div style="color:rgba(255,255,255,.3);font-size:13px;padding:16px 0">No hay cruces cargados para esta fase.</div>';
+  const up=mode==='admin'?{}:(predictions[userName]||{});
+  const disabled=disabledAttr||(mode==='view'?'disabled':'');
+
+  const cardsFixed=phMatches.map(m=>{
+    const pred=up[m.id]||{};
+    const res=results[m.id];
+    const isFixed=(ph==='Dieciseisavos');
+    let teamHHtml,teamAHtml,scoreHinput,scoreAinput,extraHtml='';
+
+    if(mode==='admin'){
+      if(isFixed){
+        teamHHtml=`<span class="bracket-team-fixed">${esc(m.home||'Local')}</span>`;
+        teamAHtml=`<span class="bracket-team-fixed">${esc(m.away||'Visitante')}</span>`;
+      }else{
+        teamHHtml=`<input type="text" class="bracket-team-input" id="res-${m.id}-th" placeholder="Local" list="paises-list" value="${res?esc(res.teamH||''):''}" ${res?'disabled':''}>`;
+        teamAHtml=`<input type="text" class="bracket-team-input" id="res-${m.id}-ta" placeholder="Visitante" list="paises-list" value="${res?esc(res.teamA||''):''}" ${res?'disabled':''}>`;
+      }
+      if(res){
+        scoreHinput=`<span class="bracket-score-fixed">${res.h}</span>`;
+        scoreAinput=`<span class="bracket-score-fixed">${res.a}</span>`;
+        extraHtml=`<div class="bracket-real" style="display:flex;align-items:center;justify-content:center;gap:6px">✅ Cargado <button onclick="clearResult('${m.id}')" style="background:none;border:none;color:#4dcd7f;cursor:pointer;text-decoration:underline;font-size:9.5px">editar</button></div>`;
+      }else{
+        scoreHinput=`<input type="number" min="0" max="99" class="bracket-score-input" id="res-${m.id}-h" placeholder="0">`;
+        scoreAinput=`<input type="number" min="0" max="99" class="bracket-score-input" id="res-${m.id}-a" placeholder="0">`;
+        extraHtml=`<div class="bracket-label" style="border-top:1px solid rgba(255,255,255,.06)"><button class="btn btn-success btn-sm" style="padding:4px 10px;font-size:10px;width:100%" onclick="saveResult('${m.id}',${!isFixed})">💾 Guardar resultado</button></div>`;
+      }
+    }else{
+      if(isFixed){
+        teamHHtml=`<span class="bracket-team-fixed">${esc(m.home||m.label||'Local')}</span>`;
+        teamAHtml=`<span class="bracket-team-fixed">${esc(m.away||'Visitante')}</span>`;
+      }else{
+        teamHHtml=`<div class="bracket-team-input-wrap">
+          <input type="text" class="bracket-team-input" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Local" maxlength="30" autocomplete="off"
+            oninput="acInput(this,'bdrop-${m.id}-th')" onblur="acBlur('bdrop-${m.id}-th')" onfocus="acInput(this,'bdrop-${m.id}-th')">
+          <div id="bdrop-${m.id}-th" class="ac-drop-bracket"></div>
+        </div>`;
+        teamAHtml=`<div class="bracket-team-input-wrap">
+          <input type="text" class="bracket-team-input" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Visitante" maxlength="30" autocomplete="off"
+            oninput="acInput(this,'bdrop-${m.id}-ta')" onblur="acBlur('bdrop-${m.id}-ta')" onfocus="acInput(this,'bdrop-${m.id}-ta')">
+          <div id="bdrop-${m.id}-ta" class="ac-drop-bracket"></div>
+        </div>`;
+      }
+      if(mode==='view'){
+        scoreHinput=`<span class="bracket-score-fixed">${pred.h!=null?pred.h:'–'}</span>`;
+        scoreAinput=`<span class="bracket-score-fixed">${pred.a!=null?pred.a:'–'}</span>`;
+      }else{
+        scoreHinput=`<input type="number" min="0" max="99" class="bracket-score-input" ${disabled} id="pred-${m.id}-h" value="${pred.h!=null?pred.h:''}" placeholder="0">`;
+        scoreAinput=`<input type="number" min="0" max="99" class="bracket-score-input" ${disabled} id="pred-${m.id}-a" value="${pred.a!=null?pred.a:''}" placeholder="0">`;
+      }
+      if(res){
+        extraHtml=isFixed
+          ?`<div class="bracket-real">✅ Real: ${res.h} - ${res.a}</div>`
+          :`<div class="bracket-real">✅ ${esc(res.teamH)} ${res.h}-${res.a} ${esc(res.teamA)}</div>`;
+        if(pred&&pred.h!=null&&pred.a!=null){
+          let ptsTxt='',ptsColor='rgba(255,255,255,.4)';
+          if(isFixed){
+            const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
+            if(ph2===res.h&&pa2===res.a){ptsTxt='🟢 Exacto +3pts';ptsColor='#4dcd7f';}
+            else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);ptsTxt=rs===ps?'🟡 Ganador +1pt':'Sin puntos';if(rs===ps)ptsColor='var(--dorado-claro)';}
+          }else{
+            const predH=norm(pred.teamH),predA=norm(pred.teamA);
+            const resH=norm(res.teamH),resA=norm(res.teamA);
+            const ok=(predH===resH&&predA===resA)||(predH===resA&&predA===resH);
+            if(ok){
+              const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
+              if(ph2===res.h&&pa2===res.a){ptsTxt='✅ Exacto +4pts';ptsColor='#4dcd7f';}
+              else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);if(rs===ps){ptsTxt='🟡 Ganador +2pts';ptsColor='var(--dorado-claro)';}else{ptsTxt='Result. mal +1pt';}}
+            }else{ptsTxt='Equipos mal +0pts';ptsColor='#f07080';}
+          }
+          extraHtml+=`<div class="bracket-pts" style="color:${ptsColor}">${ptsTxt}</div>`;
+        }
+      }else if(!isFixed&&mode!=='admin'){
+        // sin resultado real todavía, no hace falta texto extra (la etiqueta ya está arriba)
+      }
+    }
+
+    const hasResult=!!res;
+    const labelTop=(!isFixed)
+      ?`<div class="bracket-label" style="border-top:none;border-bottom:1px dashed rgba(255,255,255,.08)">${esc(m.label||'Cruce')}${m.date?' · '+fmtDate(m.date):''}</div>`
+      :(m.date?`<div class="bracket-label" style="border-top:none;border-bottom:1px dashed rgba(255,255,255,.08)">${fmtDate(m.date)}${m.time?' '+esc(m.time)+'hs':''}</div>`:'');
+
+    return`<div class="bracket-slot"><div class="bracket-card${hasResult?' has-result':''}">
+      ${labelTop}
+      <div class="bracket-team-row">${teamHHtml}${scoreHinput}</div>
+      <div class="bracket-team-row">${teamAHtml}${scoreAinput}</div>
+      ${extraHtml}
+    </div></div>`;
+  }).join('');
+
+  return`<div class="bracket-wrap"><div class="bracket-cols"><div class="bracket-col">${cardsFixed}</div></div></div>`;
+}
+
 function renderPhaseBlock(ph){
   const locked=isLocked(ph);
   const saved=getPhaseSaved(ph);
@@ -813,49 +943,8 @@ function renderPhaseBlock(ph){
   if(locked && !saved){
     bodyHtml=`<div class="phase-locked-msg">🔒 Esta fase está cerrada. No cargaste predicciones para esta fase.</div>`;
   } else {
-    if(ph === 'Dieciseisavos'){
-      // 16avos: equipos fijos, solo predecir resultado (igual que grupos)
-      bodyHtml=`<div class="info-box">⚽ Los equipos ya están definidos. Solo predecí el resultado de cada partido.</div>
-        <div class="matches-grid">`+phMatches.map(m=>{
-          const pred=up[m.id]||{};
-          const res=results[m.id];
-          const resHtml=res?`<div style="font-size:11px;color:#4dcd7f;text-align:center;margin-top:4px;font-family:'Barlow Condensed',sans-serif;font-weight:700">✅ Real: ${res.h} - ${res.a}</div>`:'';
-          return `<div class="match-card">
-            <div class="match-team home">${esc(m.home||m.label||'Local')}</div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div class="score-inputs">
-                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!==undefined&&pred.h!==null?pred.h:''}" placeholder="0">
-                <span class="score-sep">-</span>
-                <input class="score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!==undefined&&pred.a!==null?pred.a:''}" placeholder="0">
-              </div>
-              ${resHtml}
-            </div>
-            <div class="match-team away">${esc(m.away||'Visitante')}</div>
-          </div>${m.date?`<div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;margin-top:-2px;margin-bottom:4px">${fmtDate(m.date)}${m.time?' · '+esc(m.time)+'hs':''}</div>`:''}`;
-        }).join('')+'</div>';
-    } else if(isElim(ph)){
-      bodyHtml=`<div class="info-box">✏️ Escribí los equipos que creés que llegan a cada cruce y el resultado esperado.</div>
-        <div class="matches-grid">`+phMatches.map(m=>{
-          const pred=up[m.id]||{};
-          const res=results[m.id];
-          const resHtml=res?`<div class="elim-real-result">✅ Resultado real: <strong>${esc(res.teamH)}</strong> ${res.h} - ${res.a} <strong>${esc(res.teamA)}</strong></div>`:'';
-          return `<div class="elim-card">
-            <div class="elim-card-title">🏆 ${esc(m.label||PHASE_LABELS[ph])}${m.date?` · ${fmtDate(m.date)}`:''}${m.time?` ${esc(m.time)}`:''}hs</div>
-            <div class="elim-row">
-              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-th')" onblur="acBlur('pdrop-${m.id}-th')" onfocus="acInput(this,'pdrop-${m.id}-th')">
-              <div class="elim-vs">VS</div>
-              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-ta')" onblur="acBlur('pdrop-${m.id}-ta')" onfocus="acInput(this,'pdrop-${m.id}-ta')">
-            </div>
-            <div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
-            <div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
-            <div class="elim-score-row">
-              <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!=null?pred.h:''}" placeholder="0">
-              <span class="score-sep" style="font-size:15px">-</span>
-              <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-a" value="${pred.a!=null?pred.a:''}" placeholder="0">
-            </div>
-            ${resHtml}
-          </div>`;
-        }).join('')+'</div>';
+    if(ph === 'Dieciseisavos' || isElim(ph)){
+      bodyHtml=renderBracket(ph,'predict',currentUser,disabled);
     } else {
       const byDate={};
       phMatches.forEach(m=>{
@@ -1425,42 +1514,11 @@ function renderUserBody(name){
   ).join('')}</div>`;
 
   let html='';
-  matches.filter(m=>m.phase===activePhase).forEach(m=>{
-    const pred=up[m.id],res=results[m.id];
-    if(activePhase==='Dieciseisavos'){
-      let cls='pending',score='–';
-      if(pred&&pred.h!==undefined&&pred.h!==null){
-        score=`${pred.h} - ${pred.a}`;
-        if(res){
-          const ph2=parseInt(pred.h),pa2=parseInt(pred.a);
-          if(ph2===res.h&&pa2===res.a)cls='exact';
-          else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph2-pa2);cls=rs===ps?'winner':'wrong';}
-        }
-      }
-      html+=`<div class="pred-match-row">
-        <div class="pred-team-home">${esc(m.home||m.label||'Local')}</div>
-        <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
-        <div class="pred-team-away">${esc(m.away||'Visitante')}</div>
-      </div>`;
-    }else if(isElim(activePhase)){
-      if(!pred||(!pred.teamH&&!pred.teamA)){
-        html+=`<div class="pred-elim-row"><div class="pred-elim-label">${esc(m.label||'Cruce')}</div><div class="pred-elim-content" style="color:rgba(255,255,255,.25)">Sin predicción</div></div>`;
-        return;
-      }
-      const predH=norm(pred.teamH),predA=norm(pred.teamA);
-      const resH=res?norm(res.teamH):'',resA=res?norm(res.teamA):'';
-      const ok=res&&((predH===resH&&predA===resA)||(predH===resA&&predA===resH));
-      let cls='pending',pts='';
-      if(res&&ok){
-        const ph=parseInt(pred.h),pa=parseInt(pred.a);
-        if(ph===res.h&&pa===res.a){cls='exact';pts=' +4pts';}
-        else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){cls='winner';pts=' +2pts';}else{cls='wrong';pts=' +1pt';}}
-      }else if(res&&!ok)cls='wrong';
-      html+=`<div class="pred-elim-row">
-        <div class="pred-elim-label">${esc(m.label||'Cruce')}</div>
-        <div class="pred-elim-content pred-score ${cls}">${esc(pred.teamH||'?')} ${pred.h??'?'} - ${pred.a??'?'} ${esc(pred.teamA||'?')}${pts}</div>
-      </div>`;
-    }else{
+  if(activePhase==='Dieciseisavos'||isElim(activePhase)){
+    html=renderBracket(activePhase,'view',name,'disabled');
+  }else{
+    matches.filter(m=>m.phase===activePhase).forEach(m=>{
+      const pred=up[m.id],res=results[m.id];
       let cls='pending',score='–';
       if(pred&&pred.h!==undefined){
         score=`${pred.h} - ${pred.a}`;
@@ -1474,8 +1532,8 @@ function renderUserBody(name){
         <div class="pred-score ${cls}">${pred&&pred.h!==undefined?score:'–'}</div>
         <div class="pred-team-away">${esc(m.away)}</div>
       </div>`;
-    }
-  });
+    });
+  }
 
   return tabs+`<div class="view-phase-content">${html}</div>`;
 }
@@ -1697,7 +1755,16 @@ function renderAdminMatches(){
       ?`<button class="btn btn-secondary btn-sm" onclick="toggleLockPhase('${ph}')">🔓 Reabrir fase</button>`
       :`<button class="btn btn-warning btn-sm" onclick="toggleLockPhase('${ph}')">🔒 Cerrar fase</button>`;
     const phMatches=matches.filter(m=>m.phase===ph);
-    const mHtml=phMatches.map(m=>{
+    const isBracketPhase=(ph==='Dieciseisavos'||isElim(ph));
+    let mHtml;
+    if(isBracketPhase){
+      mHtml=renderBracket(ph,'admin',null,'')+`<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">${phMatches.map(m=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border-radius:6px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,.5)">
+          <span>${m.phase==='Dieciseisavos'?esc(m.home)+' vs '+esc(m.away):esc(m.label||'Cruce')}</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteMatch('${m.id}')">🗑 Eliminar</button>
+        </div>`).join('')}</div>`;
+    }else{
+    mHtml=phMatches.map(m=>{
       const res=results[m.id];
       const elimFlag=isElim(m.phase);
       const nameHtml=m.phase==='Dieciseisavos'
@@ -1731,6 +1798,7 @@ function renderAdminMatches(){
         <div class="admin-match-actions">${resHtml}<button class="btn btn-danger btn-sm" onclick="deleteMatch('${m.id}')">🗑</button></div>
       </div>`;
     }).join('');
+    }
     return`<div class="phase-admin-block">
       <div class="phase-admin-header">
         <div class="phase-admin-title">${PHASE_LABELS[ph]} <span class="phase-status-badge ${locked?'badge-locked':'badge-open'}">${locked?'🔒 Cerrada':'✏ Abierta'}</span></div>
