@@ -597,22 +597,27 @@ function getMatchNumber(m){
 }
 
 // Dado un partido de 16avos (equipos fijos) o un partido con resultado predicho,
-// devuelve el equipo Ganador o Perdedor según el marcador
-function getGanadorPerdedor(m,pred,tipo){
-  // m: el partido referenciado (puede ser 16avos con home/away, o elim con teamH/teamA)
-  // pred: la predicción del usuario para ese partido (contiene h, a, y opcionalmente teamH/teamA)
-  if(!pred||pred.h===undefined||pred.h===null||pred.a===undefined||pred.a===null)return null;
+// devuelve un ARRAY con las opciones de equipo Ganador/Perdedor según el marcador.
+// Si hay empate, devuelve ambos equipos como opciones (el usuario elige cuál pasa).
+// Si falta información, devuelve [] (vacío).
+function getGanadorPerdedorOpciones(m,pred,tipo){
+  if(!pred||pred.h===undefined||pred.h===null||pred.a===undefined||pred.a===null)return[];
   const h=parseInt(pred.h), a=parseInt(pred.a);
-  if(isNaN(h)||isNaN(a)||h===a)return null; // empate no define ganador (no debería pasar, hay penales)
+  if(isNaN(h)||isNaN(a))return[];
 
   const isFixed=(m.phase==='Dieciseisavos');
   const teamH=isFixed?m.home:pred.teamH;
   const teamA=isFixed?m.away:pred.teamA;
-  if(!teamH||!teamA)return null;
+  if(!teamH||!teamA)return[];
 
-  if(tipo==='Ganador') return h>a?teamH:teamA;
-  if(tipo==='Perdedor') return h>a?teamA:teamH;
-  return null;
+  if(h===a){
+    // Empate: no se puede determinar ganador/perdedor automáticamente.
+    // Se devuelven ambos equipos como opciones para que el usuario elija.
+    return[teamH,teamA];
+  }
+  if(tipo==='Ganador') return[h>a?teamH:teamA];
+  if(tipo==='Perdedor') return[h>a?teamA:teamH];
+  return[];
 }
 
 // Busca un partido de 16avos por nombres de equipo (sin importar mayúsculas/orden)
@@ -632,14 +637,14 @@ function findMatchByNumber(num){
 
 // Dada la etiqueta de un cruce (ej: "Partido 9: Ganador Partido 1 vs. Ganador Partido 2"
 // o "Partido 1: Ganador Sudáfrica-Canadá vs. Ganador Países Bajos-Marruecos"),
-// devuelve un array de hasta 2 equipos posibles, calculados según las predicciones del usuario.
-// Si algún referenciado todavía no tiene predicción con resultado, ese lado devuelve null.
+// devuelve un array de 2 elementos, cada uno un ARRAY de opciones posibles para ese lado:
+// - [] si todavía no se puede calcular (falta predicción en el cruce referenciado)
+// - [equipo] si hay un único equipo posible (caso normal)
+// - [equipoA, equipoB] si el cruce referenciado quedó empatado y hay que elegir manualmente
 function resolveTeamsFromLabel(label,up){
-  if(!label)return[null,null];
-  // Separar en dos mitades por "vs." (o variantes)
+  if(!label)return[[],[]];
   const parts=label.split(/\s+vs\.?\s+/i);
-  if(parts.length<2)return[null,null];
-  // La primera parte puede tener el prefijo "Partido N: " que hay que ignorar
+  if(parts.length<2)return[[],[]];
   const leftRaw=parts[0].replace(/^Partido\s+\d+:\s*/i,'').trim();
   const rightRaw=parts[1].trim();
 
@@ -649,9 +654,9 @@ function resolveTeamsFromLabel(label,up){
     if(m){
       const tipo=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
       const refMatch=findMatchByNumber(parseInt(m[2]));
-      if(!refMatch)return null;
+      if(!refMatch)return[];
       const refPred=up[refMatch.id];
-      return getGanadorPerdedor(refMatch,refPred,tipo);
+      return getGanadorPerdedorOpciones(refMatch,refPred,tipo);
     }
     // Caso 2: "Ganador EQUIPO1-EQUIPO2" o "Perdedor EQUIPO1-EQUIPO2"
     m=raw.match(/^(Ganador|Perdedor)\s+(.+?)-(.+)$/i);
@@ -659,11 +664,11 @@ function resolveTeamsFromLabel(label,up){
       const tipo=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
       const teamA=m[2].trim(), teamB=m[3].trim();
       const refMatch=findMatch16ByTeams(teamA,teamB);
-      if(!refMatch)return null;
+      if(!refMatch)return[];
       const refPred=up[refMatch.id];
-      return getGanadorPerdedor(refMatch,refPred,tipo);
+      return getGanadorPerdedorOpciones(refMatch,refPred,tipo);
     }
-    return null;
+    return[];
   }
 
   return[resolveOne(leftRaw),resolveOne(rightRaw)];
@@ -911,43 +916,52 @@ function renderPhaseBlock(ph){
           </div>${m.date?`<div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;margin-top:-2px;margin-bottom:4px">${fmtDate(m.date)}${m.time?' · '+esc(m.time)+'hs':''}</div>`:''}`;
         }).join('')+'</div>';
     } else if(isElim(ph)){
-      bodyHtml=`<div class="info-box">✏️ Los equipos se completan automáticamente según los ganadores que pusiste en la fase anterior. Si todavía no los completaste ahí, escribilos manualmente por ahora.</div>
+      bodyHtml=`<div class="info-box">✏️ Los equipos se completan automáticamente según los ganadores que pusiste en la fase anterior. Si el cruce anterior quedó empatado, elegí manualmente cuál de los dos pasa.</div>
         <div class="matches-grid">`+phMatches.map(m=>{
           const pred=up[m.id]||{};
           const res=results[m.id];
           const resHtml=res?`<div class="elim-real-result">✅ Resultado real: <strong>${esc(res.teamH)}</strong> ${res.h} - ${res.a} <strong>${esc(res.teamA)}</strong></div>`:'';
 
-          // Intentar resolver los equipos automáticamente desde la etiqueta
-          const [autoH,autoA]=resolveTeamsFromLabel(m.label,up);
+          // Intentar resolver las opciones de equipo automáticamente desde la etiqueta
+          // optsH/optsA son arrays: [] = no calculable, [x] = único, [x,y] = empate, elegir
+          const [optsH,optsA]=resolveTeamsFromLabel(m.label,up);
 
-          // Campo equipo local: select si se pudo calcular, sino input libre con autocomplete
-          let teamHField,teamAField;
-          if(autoH){
-            const selected=pred.teamH||autoH;
-            teamHField=`<select class="elim-team-input" ${disabled} id="pred-${m.id}-th" style="cursor:pointer">
-              <option value="${esc(autoH)}" ${selected===autoH?'selected':''}>${esc(autoH)}</option>
+          function buildField(opts,fieldId,currentVal,placeholderSide){
+            if(opts.length===0){
+              // No se pudo calcular: input libre con autocomplete (fallback)
+              return`<input class="elim-team-input" type="text" ${disabled} id="${fieldId}" value="${esc(currentVal||'')}" placeholder="Equipo ${placeholderSide} (aún no definido)" maxlength="30" autocomplete="off" oninput="acInput(this,'${fieldId.replace('pred-','pdrop-')}')" onblur="acBlur('${fieldId.replace('pred-','pdrop-')}')" onfocus="acInput(this,'${fieldId.replace('pred-','pdrop-')}')">`;
+            }
+            if(opts.length===1){
+              // Único equipo posible: select fijo, ya completado
+              const val=opts[0];
+              return`<select class="elim-team-input" ${disabled} id="${fieldId}" style="cursor:pointer">
+                <option value="${esc(val)}" selected>${esc(val)}</option>
+              </select>`;
+            }
+            // Empate en el cruce anterior: el usuario elige cuál de los dos pasa
+            const selectedVal=(currentVal&&opts.includes(currentVal))?currentVal:'';
+            return`<select class="elim-team-input" ${disabled} id="${fieldId}" style="cursor:pointer;${!selectedVal?'border-color:rgba(212,160,23,.6)':''}">
+              <option value="" ${!selectedVal?'selected':''} disabled>⚠️ Elegí quién pasó</option>
+              ${opts.map(o=>`<option value="${esc(o)}" ${selectedVal===o?'selected':''}>${esc(o)}</option>`).join('')}
             </select>`;
-          }else{
-            teamHField=`<input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local (aún no definido)" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-th')" onblur="acBlur('pdrop-${m.id}-th')" onfocus="acInput(this,'pdrop-${m.id}-th')">`;
           }
-          if(autoA){
-            const selected=pred.teamA||autoA;
-            teamAField=`<select class="elim-team-input" ${disabled} id="pred-${m.id}-ta" style="cursor:pointer">
-              <option value="${esc(autoA)}" ${selected===autoA?'selected':''}>${esc(autoA)}</option>
-            </select>`;
-          }else{
-            teamAField=`<input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante (aún no definido)" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-ta')" onblur="acBlur('pdrop-${m.id}-ta')" onfocus="acInput(this,'pdrop-${m.id}-ta')">`;
-          }
+
+          const teamHField=buildField(optsH,`pred-${m.id}-th`,pred.teamH,'local');
+          const teamAField=buildField(optsA,`pred-${m.id}-ta`,pred.teamA,'visitante');
+          const needsDropdownH=optsH.length===0;
+          const needsDropdownA=optsA.length===0;
+          const hasTie=optsH.length>1||optsA.length>1;
 
           return `<div class="elim-card">
             <div class="elim-card-title">🏆 ${esc(m.label||PHASE_LABELS[ph])}${m.date?` · ${fmtDate(m.date)}`:''}${m.time?` ${esc(m.time)}`:''}hs</div>
+            ${hasTie?`<div style="font-size:11px;color:var(--dorado-claro);text-align:center;margin-bottom:6px">⚠️ Hubo empate en el cruce anterior, elegí manualmente quién avanza</div>`:''}
             <div class="elim-row">
               ${teamHField}
               <div class="elim-vs">VS</div>
               ${teamAField}
             </div>
-            ${!autoH?`<div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
-            ${!autoA?`<div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
+            ${needsDropdownH?`<div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
+            ${needsDropdownA?`<div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
             <div class="elim-score-row">
               <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!=null?pred.h:''}" placeholder="0">
               <span class="score-sep" style="font-size:15px">-</span>
@@ -1041,6 +1055,13 @@ window.savePhase=async function(ph){
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!th)return;
       const thv=th.value.trim(),tav=ta.value.trim(),hv=h?.value.trim()||'',av=a?.value.trim()||'';
+      // Si el campo es un <select> de empate sin elegir, el value queda vacío
+      if(th.tagName==='SELECT'&&!thv){
+        toast('Falta elegir qué equipo avanzó en el cruce anterior (local)',true);return;
+      }
+      if(ta.tagName==='SELECT'&&!tav){
+        toast('Falta elegir qué equipo avanzó en el cruce anterior (visitante)',true);return;
+      }
       const paisesNombres=PAISES.map(p=>p.name.toLowerCase());
       if(thv&&!paisesNombres.includes(thv.toLowerCase())){
         toast(`"${thv}" no es un país válido. Elegí de la lista.`,true);return;
