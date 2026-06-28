@@ -456,7 +456,7 @@
               </div>
               <div class="form-field" style="margin:0">
                 <label>Etiqueta del cruce</label>
-                <input type="text" id="elim-label" placeholder="Ej: Partido 1 · 1C vs 2D">
+                <input type="text" id="elim-label" placeholder="Ej: Partido 1: Ganador Sudáfrica-Canadá vs. Ganador Países Bajos-Marruecos">
               </div>
             </div>
             <button class="btn btn-primary" onclick="addMatch()">Agregar Partido</button>
@@ -587,6 +587,88 @@ window.acBlur=function(dropId){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function isElim(ph){return ELIM_PHASES.includes(ph)}
+
+// ── RESOLUCIÓN AUTOMÁTICA DE EQUIPOS SEGÚN ETIQUETA ──
+// Extrae el número propio de un partido desde su etiqueta "Partido N: ..."
+function getMatchNumber(m){
+  if(!m.label)return null;
+  const match=m.label.match(/^Partido\s+(\d+)/i);
+  return match?parseInt(match[1]):null;
+}
+
+// Dado un partido de 16avos (equipos fijos) o un partido con resultado predicho,
+// devuelve el equipo Ganador o Perdedor según el marcador
+function getGanadorPerdedor(m,pred,tipo){
+  // m: el partido referenciado (puede ser 16avos con home/away, o elim con teamH/teamA)
+  // pred: la predicción del usuario para ese partido (contiene h, a, y opcionalmente teamH/teamA)
+  if(!pred||pred.h===undefined||pred.h===null||pred.a===undefined||pred.a===null)return null;
+  const h=parseInt(pred.h), a=parseInt(pred.a);
+  if(isNaN(h)||isNaN(a)||h===a)return null; // empate no define ganador (no debería pasar, hay penales)
+
+  const isFixed=(m.phase==='Dieciseisavos');
+  const teamH=isFixed?m.home:pred.teamH;
+  const teamA=isFixed?m.away:pred.teamA;
+  if(!teamH||!teamA)return null;
+
+  if(tipo==='Ganador') return h>a?teamH:teamA;
+  if(tipo==='Perdedor') return h>a?teamA:teamH;
+  return null;
+}
+
+// Busca un partido de 16avos por nombres de equipo (sin importar mayúsculas/orden)
+function findMatch16ByTeams(teamA,teamB){
+  const ta=norm(teamA), tb=norm(teamB);
+  return matches.find(m=>{
+    if(m.phase!=='Dieciseisavos')return false;
+    const h=norm(m.home), a=norm(m.away);
+    return (h===ta&&a===tb)||(h===tb&&a===ta);
+  });
+}
+
+// Busca un partido (cualquier fase) por su número propio de "Partido N:"
+function findMatchByNumber(num){
+  return matches.find(m=>getMatchNumber(m)===num);
+}
+
+// Dada la etiqueta de un cruce (ej: "Partido 9: Ganador Partido 1 vs. Ganador Partido 2"
+// o "Partido 1: Ganador Sudáfrica-Canadá vs. Ganador Países Bajos-Marruecos"),
+// devuelve un array de hasta 2 equipos posibles, calculados según las predicciones del usuario.
+// Si algún referenciado todavía no tiene predicción con resultado, ese lado devuelve null.
+function resolveTeamsFromLabel(label,up){
+  if(!label)return[null,null];
+  // Separar en dos mitades por "vs." (o variantes)
+  const parts=label.split(/\s+vs\.?\s+/i);
+  if(parts.length<2)return[null,null];
+  // La primera parte puede tener el prefijo "Partido N: " que hay que ignorar
+  const leftRaw=parts[0].replace(/^Partido\s+\d+:\s*/i,'').trim();
+  const rightRaw=parts[1].trim();
+
+  function resolveOne(raw){
+    // Caso 1: "Ganador Partido X" o "Perdedor Partido X"
+    let m=raw.match(/^(Ganador|Perdedor)\s+Partido\s+(\d+)/i);
+    if(m){
+      const tipo=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
+      const refMatch=findMatchByNumber(parseInt(m[2]));
+      if(!refMatch)return null;
+      const refPred=up[refMatch.id];
+      return getGanadorPerdedor(refMatch,refPred,tipo);
+    }
+    // Caso 2: "Ganador EQUIPO1-EQUIPO2" o "Perdedor EQUIPO1-EQUIPO2"
+    m=raw.match(/^(Ganador|Perdedor)\s+(.+?)-(.+)$/i);
+    if(m){
+      const tipo=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
+      const teamA=m[2].trim(), teamB=m[3].trim();
+      const refMatch=findMatch16ByTeams(teamA,teamB);
+      if(!refMatch)return null;
+      const refPred=up[refMatch.id];
+      return getGanadorPerdedor(refMatch,refPred,tipo);
+    }
+    return null;
+  }
+
+  return[resolveOne(leftRaw),resolveOne(rightRaw)];
+}
+
 function isLocked(ph,user){
   if(!lockedPhases[ph])return false; // fase abierta para todos
   const u=user||currentUser;
@@ -682,19 +764,16 @@ window.loadUserPredictions=function(){
   const existente=predictions[name]!==undefined;
   const tienePIN=pins[name]!==undefined;
   if(!existente){
-    // Usuario nuevo: crear PIN
     showPinModal('nuevo', name, async(pin)=>{
       await setPin(name,pin);
       enterUser(name);
     });
   }else if(!tienePIN){
-    // Usuario existente sin PIN: asignar uno
     showPinModal('asignar', name, async(pin)=>{
       await setPin(name,pin);
       enterUser(name);
     });
   }else{
-    // Usuario con PIN: verificar
     showPinModal('verificar', name, (pin)=>{
       if(pin===pins[name]){
         enterUser(name);
@@ -776,7 +855,6 @@ function renderPredictContent(){
   }
   const phases=[...new Set(matches.map(m=>m.phase))].sort((a,b)=>PHASES.indexOf(a)-PHASES.indexOf(b));
 
-  // Por defecto mostrar la última fase con partidos (la más nueva agregada)
   if(window._predictPhaseTab===undefined||!phases.includes(window._predictPhaseTab)){
     window._predictPhaseTab=phases[phases.length-1];
   }
@@ -814,7 +892,6 @@ function renderPhaseBlock(ph){
     bodyHtml=`<div class="phase-locked-msg">🔒 Esta fase está cerrada. No cargaste predicciones para esta fase.</div>`;
   } else {
     if(ph === 'Dieciseisavos'){
-      // 16avos: equipos fijos, solo predecir resultado (igual que grupos)
       bodyHtml=`<div class="info-box">⚽ Los equipos ya están definidos. Solo predecí el resultado de cada partido.</div>
         <div class="matches-grid">`+phMatches.map(m=>{
           const pred=up[m.id]||{};
@@ -834,20 +911,43 @@ function renderPhaseBlock(ph){
           </div>${m.date?`<div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;margin-top:-2px;margin-bottom:4px">${fmtDate(m.date)}${m.time?' · '+esc(m.time)+'hs':''}</div>`:''}`;
         }).join('')+'</div>';
     } else if(isElim(ph)){
-      bodyHtml=`<div class="info-box">✏️ Escribí los equipos que creés que llegan a cada cruce y el resultado esperado.</div>
+      bodyHtml=`<div class="info-box">✏️ Los equipos se completan automáticamente según los ganadores que pusiste en la fase anterior. Si todavía no los completaste ahí, escribilos manualmente por ahora.</div>
         <div class="matches-grid">`+phMatches.map(m=>{
           const pred=up[m.id]||{};
           const res=results[m.id];
           const resHtml=res?`<div class="elim-real-result">✅ Resultado real: <strong>${esc(res.teamH)}</strong> ${res.h} - ${res.a} <strong>${esc(res.teamA)}</strong></div>`:'';
+
+          // Intentar resolver los equipos automáticamente desde la etiqueta
+          const [autoH,autoA]=resolveTeamsFromLabel(m.label,up);
+
+          // Campo equipo local: select si se pudo calcular, sino input libre con autocomplete
+          let teamHField,teamAField;
+          if(autoH){
+            const selected=pred.teamH||autoH;
+            teamHField=`<select class="elim-team-input" ${disabled} id="pred-${m.id}-th" style="cursor:pointer">
+              <option value="${esc(autoH)}" ${selected===autoH?'selected':''}>${esc(autoH)}</option>
+            </select>`;
+          }else{
+            teamHField=`<input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local (aún no definido)" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-th')" onblur="acBlur('pdrop-${m.id}-th')" onfocus="acInput(this,'pdrop-${m.id}-th')">`;
+          }
+          if(autoA){
+            const selected=pred.teamA||autoA;
+            teamAField=`<select class="elim-team-input" ${disabled} id="pred-${m.id}-ta" style="cursor:pointer">
+              <option value="${esc(autoA)}" ${selected===autoA?'selected':''}>${esc(autoA)}</option>
+            </select>`;
+          }else{
+            teamAField=`<input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante (aún no definido)" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-ta')" onblur="acBlur('pdrop-${m.id}-ta')" onfocus="acInput(this,'pdrop-${m.id}-ta')">`;
+          }
+
           return `<div class="elim-card">
             <div class="elim-card-title">🏆 ${esc(m.label||PHASE_LABELS[ph])}${m.date?` · ${fmtDate(m.date)}`:''}${m.time?` ${esc(m.time)}`:''}hs</div>
             <div class="elim-row">
-              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-th" value="${esc(pred.teamH||'')}" placeholder="Equipo local" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-th')" onblur="acBlur('pdrop-${m.id}-th')" onfocus="acInput(this,'pdrop-${m.id}-th')">
+              ${teamHField}
               <div class="elim-vs">VS</div>
-              <input class="elim-team-input" type="text" ${disabled} id="pred-${m.id}-ta" value="${esc(pred.teamA||'')}" placeholder="Equipo visitante" maxlength="30" autocomplete="off" oninput="acInput(this,'pdrop-${m.id}-ta')" onblur="acBlur('pdrop-${m.id}-ta')" onfocus="acInput(this,'pdrop-${m.id}-ta')">
+              ${teamAField}
             </div>
-            <div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
-            <div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>
+            ${!autoH?`<div id="pdrop-${m.id}-th" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
+            ${!autoA?`<div id="pdrop-${m.id}-ta" class="autocomplete-dropdown" style="position:relative;z-index:50"></div>`:''}
             <div class="elim-score-row">
               <input class="elim-score-input" type="number" min="0" max="99" ${disabled} id="pred-${m.id}-h" value="${pred.h!=null?pred.h:''}" placeholder="0">
               <span class="score-sep" style="font-size:15px">-</span>
@@ -929,21 +1029,18 @@ window.savePhase=async function(ph){
   let count=0;
   phMatches.forEach(m=>{
     if(m.phase==='Dieciseisavos'){
-      // 16avos: solo resultado, equipos fijos
       const h=document.getElementById('pred-'+m.id+'-h');
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!h)return;
       const hv=h.value.trim(),av=a.value.trim();
       if(hv!==''&&av!==''){up[m.id]={h:parseInt(hv),a:parseInt(av)};count++;}
     }else if(isElim(m.phase)){
-      // Octavos en adelante: equipos + resultado
       const th=document.getElementById('pred-'+m.id+'-th');
       const ta=document.getElementById('pred-'+m.id+'-ta');
       const h=document.getElementById('pred-'+m.id+'-h');
       const a=document.getElementById('pred-'+m.id+'-a');
       if(!th)return;
       const thv=th.value.trim(),tav=ta.value.trim(),hv=h?.value.trim()||'',av=a?.value.trim()||'';
-      // Validar que los equipos existan en la lista
       const paisesNombres=PAISES.map(p=>p.name.toLowerCase());
       if(thv&&!paisesNombres.includes(thv.toLowerCase())){
         toast(`"${thv}" no es un país válido. Elegí de la lista.`,true);return;
@@ -979,12 +1076,9 @@ window.savePhase=async function(ph){
 // ── TABLAS DE GRUPOS SIMULADAS ──
 function renderGroupTables(userName){
   const up = predictions[userName] || {};
-
-  // Solo partidos de fase de grupos que tengan grupo asignado
   const groupMatches = matches.filter(m => m.phase === 'Grupos' && m.group);
   if(groupMatches.length === 0) return '';
 
-  // Agrupar por grupo
   const byGroup = {};
   groupMatches.forEach(m => {
     if(!byGroup[m.group]) byGroup[m.group] = [];
@@ -997,8 +1091,6 @@ function renderGroupTables(userName){
 
   groupKeys.forEach(g => {
     const gMatches = byGroup[g];
-
-    // Verificar que el usuario cargó todos los partidos del grupo
     const complete = gMatches.every(m => {
       const p = up[m.id];
       return p && p.h !== undefined && p.h !== '' && p.h !== null &&
@@ -1007,13 +1099,11 @@ function renderGroupTables(userName){
     if(!complete) return;
     anyComplete = true;
 
-    // Inicializar tabla de posiciones
     const table = {};
     const addTeam = t => {
       if(!table[t]) table[t] = {pts:0, pj:0, g:0, e:0, p:0, gf:0, gc:0};
     };
 
-    // Calcular resultados según picks del usuario
     gMatches.forEach(m => {
       const pred = up[m.id];
       const h = parseInt(pred.h);
@@ -1029,17 +1119,14 @@ function renderGroupTables(userName){
       table[m.away].gc += h;
 
       if(h > a){
-        // Gana local
         table[m.home].g++;
         table[m.home].pts += 3;
         table[m.away].p++;
       } else if(h < a){
-        // Gana visitante
         table[m.away].g++;
         table[m.away].pts += 3;
         table[m.home].p++;
       } else {
-        // Empate
         table[m.home].e++;
         table[m.home].pts++;
         table[m.away].e++;
@@ -1047,7 +1134,6 @@ function renderGroupTables(userName){
       }
     });
 
-    // Ordenar: 1) Puntos  2) Diferencia de goles  3) Goles a favor
     const sorted = Object.entries(table).sort((a, b) => {
       const [, ta] = a, [, tb] = b;
       if(tb.pts !== ta.pts) return tb.pts - ta.pts;
@@ -1059,7 +1145,6 @@ function renderGroupTables(userName){
     const rowsHtml = sorted.map(([team, s], i) => {
       const dg = s.gf - s.gc;
       const dgStr = dg > 0 ? `<span class="sim-dg-pos">+${dg}</span>` : dg < 0 ? `<span class="sim-dg-neg">${dg}</span>` : `<span style="color:rgba(255,255,255,.4)">0</span>`;
-      // Posición: 1ro y 2do pasan directo, 3ro puede pasar como mejor tercero, 4to eliminado
       let posIcon = '';
       if(i === 0) posIcon = '<span class="sim-pos-icon" title="Clasificado directo">🟢</span>';
       else if(i === 1) posIcon = '<span class="sim-pos-icon" title="Clasificado directo">🟢</span>';
@@ -1123,31 +1208,27 @@ function calcScore(name){
     const res=results[m.id],pred=up[m.id];
     if(!res||!pred)return;
     if(m.phase==='Dieciseisavos'){
-      // 16avos: equipos fijos, puntaje igual a grupos
       if(pred.h===undefined||pred.h===null||pred.a===undefined||pred.a===null)return;
       total++;
       const ph=parseInt(pred.h),pa=parseInt(pred.a);
       if(ph===res.h&&pa===res.a){pts+=3;exact++;}
       else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){pts+=1;winner++;}}
     }else if(isElim(m.phase)){
-      // Octavos en adelante: equipos variables
-      // Opción A: equipos ok (cualquier orden) + resultado
       const predH=norm(pred.teamH),predA=norm(pred.teamA);
       const resH=norm(res.teamH),resA=norm(res.teamA);
       if(pred.h===null||pred.a===null||!predH||!predA)return;
       total++;
       const ok=(predH===resH&&predA===resA)||(predH===resA&&predA===resH);
-      if(!ok)return; // equipos mal = 0 pts
+      if(!ok)return;
       teamsOk++;
       const ph=parseInt(pred.h),pa=parseInt(pred.a);
-      if(ph===res.h&&pa===res.a){pts+=4;exact++;} // equipos ok + exacto = 4pts
+      if(ph===res.h&&pa===res.a){pts+=4;exact++;}
       else{
         const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);
-        if(rs===ps){pts+=2;winner++;} // equipos ok + ganador = 2pts
-        else{pts+=1;} // equipos ok + resultado mal = 1pt
+        if(rs===ps){pts+=2;winner++;}
+        else{pts+=1;}
       }
     }else{
-      // Grupos
       if(pred.h===undefined||pred.a===undefined)return;
       total++;
       const ph=parseInt(pred.h),pa=parseInt(pred.a);
@@ -1155,7 +1236,6 @@ function calcScore(name){
       else{const rs=Math.sign(res.h-res.a),ps=Math.sign(ph-pa);if(rs===ps){pts+=1;winner++;}}
     }
   });
-  // Calcular racha actual de aciertos (ganador o exacto) en orden cronológico
   const played=[];
   const sortedM=[...matches].sort((a,b)=>{
     const da=a.date||'9999',db2=b.date||'9999';
@@ -1190,7 +1270,6 @@ function calcScore(name){
   return{pts,exact,winner,teamsOk,total,racha,pct};
 }
 
-// Calcula puntos que un usuario sumó en partidos de una fecha específica
 function calcScoreDia(name, dateStr){
   const up=predictions[name]||{};
   let pts=0;
@@ -1227,7 +1306,6 @@ function renderScores(){
     return `<button class="scores-tab${activeTab===id?' active':''}" onclick="switchScoresTab('${id}')">${label}</button>`;
   }
 
-  // Ganador del día
   function renderGanadorDia(){
     const today=todayStr();
     const todayMatches=matches.filter(m=>m.date===today&&results[m.id]);
@@ -1252,13 +1330,12 @@ function renderScores(){
     </div>`;
   }
 
-  // Tabla individual
   function renderTable(data,showSector=false,showLastRed=true){
     const n=data.length;
     return`<div class="scores-table-wrap"><table class="scores-table">
       <thead><tr><th>#</th><th>Participante</th>${showSector?'<th>Sector</th>':''}<th>Pts</th><th>Exactos</th><th>Aciertos</th><th>%</th><th>Racha</th><th>Partidos</th></tr></thead>
       <tbody>${data.map((r,i)=>{
-        const isLast=showLastRed&&n>3&&i>=n-3; // últimos 3 puestos, solo si hay más de 3 participantes
+        const isLast=showLastRed&&n>3&&i>=n-3;
         const rankClass=i<3?(i+1):(isLast?'last':'other');
         return`<tr class="${isLast?'row-last':''}">
         <td><span class="rank-badge rank-${rankClass}">${i+1}</span></td>
@@ -1273,10 +1350,8 @@ function renderScores(){
     </table></div>`;
   }
 
-  // Ranking por sectores con suma y promedio
   function renderSectores(){
     if(!sectorsList.length)return'<div style="color:rgba(255,255,255,.3);font-size:14px;padding:20px 0">No hay sectores definidos aún. Creálos desde el panel Admin.</div>';
-    // Ranking global de sectores
     const secStats=sectorsList.map(sec=>{
       const miembros=rows.filter(r=>r.sector===sec);
       if(!miembros.length)return null;
@@ -1299,7 +1374,6 @@ function renderScores(){
       </table>
     </div>`;
 
-    // Detalle por sector
     secStats.forEach(s=>{
       html+=`<div class="sector-ranking">
         <div class="sector-ranking-title">🏢 ${esc(s.sec)} · Suma: ${s.suma}pts · Prom: ${s.prom}pts</div>
@@ -1317,12 +1391,10 @@ function renderScores(){
     return html;
   }
 
-  // Estadísticas
   function renderStats(){
     const maxPct=Math.max(...rows.map(r=>r.pct),1);
     const maxRacha=Math.max(...rows.map(r=>r.racha),1);
 
-    // Stats por sector
     let sectorStats='';
     if(sectorsList.length){
       sectorStats=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin:16px 0 8px">% promedio por sector</div>
@@ -1641,7 +1713,6 @@ window.deleteSector=async function(name){
   const updated=sectorsList.filter(s=>s!==name);
   try{
     await setDoc(doc(db,'sectors','__list'),{list:updated});
-    // Quitar sector de usuarios que lo tenían
     const affected=Object.entries(sectors).filter(([,s])=>s===name);
     for(const [user] of affected){
       await deleteDoc(doc(db,'sectors',user));
@@ -1772,7 +1843,6 @@ function renderAdminUsers(){
   c.innerHTML=names.map(n=>{
     const s=calcScore(n);
     const resets=phases.map(ph=>`<button class="btn btn-secondary btn-sm" onclick="resetUserPhase('${esc(n)}','${ph}')">↩ ${PHASE_LABELS[ph]}</button>`).join('');
-    // Fases cerradas globalmente con excepción individual
     const lockedPhasesList=phases.filter(ph=>isLocked(ph,null));
     const excList=exceptions[n]||[];
     const excBtns=lockedPhasesList.map(ph=>{
@@ -1898,8 +1968,6 @@ function updateTodayMatches(){
       row.innerHTML=`<span>${esc(homeName)}</span><span class="today-match-score">${res.h} - ${res.a}</span><span>${esc(awayName)}</span>`;
     }else{
       const timeStr=m.time?`<span style="color:rgba(255,255,255,.4);font-size:11px">${esc(m.time)}hs</span>`:'';
-      row.innerHTML=`<span>${esc(homeName)}</span>${timeStr}<span style="color:rgba(255,255,255,.3)">vs</span>${timeStr?'':'<span style="color:rgba(255,255,255,.3)">vs</span>'}<span>${esc(awayName)}</span>`;
-      // simplify
       row.innerHTML=`<span style="color:rgba(255,255,255,.8)">${esc(homeName)}</span><span style="color:rgba(255,255,255,.3);font-size:11px">${m.time?esc(m.time)+'hs':'vs'}</span><span style="color:rgba(255,255,255,.8)">${esc(awayName)}</span>`;
     }
     wrap.appendChild(row);
@@ -1909,8 +1977,6 @@ function updateTodayMatches(){
 
 function updateCountdown(){
   const now=new Date();
-  // Filtrar partidos que aún no arrancaron (fecha+hora > ahora)
-  // Para partidos sin hora asignada se usa 23:59 para que no los saltee antes de tiempo
   const upcoming=matches
     .filter(m=>{
       if(!m.date)return false;
@@ -1941,7 +2007,6 @@ function updateCountdown(){
   function tick(){
     const diff=target-new Date();
     if(diff<=0){
-      // Partido arrancó, recalcular para el siguiente
       clearInterval(window._countdownInterval);
       updateCountdown();
       return;
@@ -1961,7 +2026,6 @@ function updateCountdown(){
 }
 
 function updateChampion(){
-  // Contar equipos elegidos como campeón (teamH o teamA de la Final)
   const finalMatches=matches.filter(m=>m.phase==='Final');
   if(!finalMatches.length)return;
   const block=document.getElementById('header-champion-block');
@@ -1973,7 +2037,6 @@ function updateChampion(){
     finalMatches.forEach(m=>{
       const pred=preds[m.id];
       if(!pred)return;
-      // El campeón es el equipo que gana (el que tenga más goles)
       if(pred.teamH&&pred.teamA&&pred.h!=null&&pred.a!=null){
         const winner=pred.h>pred.a?pred.teamH:pred.h<pred.a?pred.teamA:null;
         if(winner){count[winner]=(count[winner]||0)+1;}
@@ -1987,10 +2050,6 @@ function updateChampion(){
   val.textContent=`${esc(champ)} (${votes} voto${votes!==1?'s':''})`;
 }
 
-// Actualizar header cuando cambian los datos
-const _origRefreshAll=refreshAll;
-
-// Poblar datalist de países
 const dl=document.getElementById('paises-list');
 PAISES.forEach(p=>{const o=document.createElement('option');o.value=p.name;dl.appendChild(o);});
 
