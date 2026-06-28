@@ -95,6 +95,7 @@
   .elim-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);margin-bottom:12px}
   .elim-row{display:grid;grid-template-columns:1fr 44px 1fr;gap:8px;align-items:center;margin-bottom:8px}
   .elim-team-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:9px 10px;color:white;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;outline:none;text-align:center;width:100%}
+  .elim-team-input option{color:#1A1A2E;background:#FAFAF8}
   .elim-team-input:focus{border-color:var(--dorado)}
   .elim-team-input:disabled{opacity:.45;cursor:not-allowed}
   .elim-team-input::placeholder{color:rgba(255,255,255,.2);font-weight:400;font-size:12px}
@@ -941,8 +942,8 @@ function renderPhaseBlock(ph){
             // Empate en el cruce anterior: el usuario elige cuál de los dos pasa
             const selectedVal=(currentVal&&opts.includes(currentVal))?currentVal:'';
             return`<select class="elim-team-input" ${disabled} id="${fieldId}" style="cursor:pointer;${!selectedVal?'border-color:rgba(212,160,23,.6)':''}">
-              <option value="" ${!selectedVal?'selected':''} disabled>⚠️ Elegí quién pasó</option>
-              ${opts.map(o=>`<option value="${esc(o)}" ${selectedVal===o?'selected':''}>${esc(o)}</option>`).join('')}
+              <option value="" ${!selectedVal?'selected':''} disabled style="color:#888">⚠️ Elegí quién pasó</option>
+              ${opts.map(o=>`<option value="${esc(o)}" ${selectedVal===o?'selected':''} style="color:#1A1A2E;background:#FAFAF8">${esc(o)}</option>`).join('')}
             </select>`;
           }
 
